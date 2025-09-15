@@ -599,11 +599,75 @@
     <!-- Export Modal -->
     <div id="exportModal" class="fixed inset-0 bg-black bg-opacity-50 modal-backdrop hidden z-50">
         <div class="flex items-center justify-center min-h-screen p-4">
-            <div class="bg-white rounded-xl shadow-xl max-w-md w-full">
+            <div class="bg-white rounded-xl shadow-xl max-w-lg w-full">
                 <div class="p-6 border-b border-gray-200">
                     <h3 class="text-xl font-semibold text-gray-900">Exportar Datos</h3>
+                    <p class="text-sm text-gray-600 mt-1">Selecciona qué información incluir en la exportación</p>
                 </div>
-                <div class="p-6 space-y-4">
+                
+                <!-- Export Options -->
+                <div class="p-6 border-b border-gray-200">
+                    <h4 class="text-sm font-medium text-gray-700 mb-3">¿Qué datos incluir?</h4>
+                    <div class="space-y-2">
+                        <label class="flex items-center">
+                            <input type="checkbox" id="exportInterventions" checked class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <span class="ml-2 text-sm text-gray-700">Intervenciones (<span id="interventionsCount">${interventions.length}</span>)</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="exportSessions" checked class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <span class="ml-2 text-sm text-gray-700">Sesiones de Coaching (<span id="sessionsCount">${sessions.length}</span>)</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="exportActivities" checked class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <span class="ml-2 text-sm text-gray-700">Actividades y Notas</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="exportDocuments" checked class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <span class="ml-2 text-sm text-gray-700">Documentos y Enlaces</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Date Filters -->
+                <div class="p-6 border-b border-gray-200">
+                    <h4 class="text-sm font-medium text-gray-700 mb-3">Filtros de Fecha</h4>
+                    <div class="space-y-4">
+                        <div class="flex items-center space-x-3">
+                            <label class="flex items-center">
+                                <input type="radio" name="dateFilter" value="all" checked class="text-blue-600 focus:ring-blue-500" onchange="toggleDateInputs()">
+                                <span class="ml-2 text-sm text-gray-700">Todos los datos</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="dateFilter" value="range" class="text-blue-600 focus:ring-blue-500" onchange="toggleDateInputs()">
+                                <span class="ml-2 text-sm text-gray-700">Rango de fechas</span>
+                            </label>
+                        </div>
+                        
+                        <div id="dateRangeInputs" class="grid grid-cols-2 gap-3 opacity-50 pointer-events-none">
+                            <div>
+                                <label class="block text-xs text-gray-600 mb-1">Fecha desde:</label>
+                                <input type="date" id="exportDateFrom" class="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-600 mb-1">Fecha hasta:</label>
+                                <input type="date" id="exportDateTo" class="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
+                            </div>
+                        </div>
+                        
+                        <div class="flex space-x-2">
+                            <button type="button" onclick="setQuickDateRange('thisMonth')" class="px-3 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded transition-colors">Este Mes</button>
+                            <button type="button" onclick="setQuickDateRange('lastMonth')" class="px-3 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded transition-colors">Mes Anterior</button>
+                            <button type="button" onclick="setQuickDateRange('thisQuarter')" class="px-3 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded transition-colors">Este Trimestre</button>
+                            <button type="button" onclick="setQuickDateRange('thisYear')" class="px-3 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded transition-colors">Este Año</button>
+                        </div>
+                        
+                        <button type="button" onclick="updateExportCounts()" class="w-full px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded text-sm transition-colors">
+                            🔄 Actualizar Contadores
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="p-6 space-y-3">
                     <button onclick="exportToPDF()" class="w-full flex items-center justify-center space-x-3 px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors">
                         <span>📄</span>
                         <span>Exportar a PDF</span>
@@ -1521,6 +1585,56 @@
                         </div>
                     </div>
 
+                    <!-- Documents Section -->
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <h4 class="text-lg font-semibold text-gray-900 flex items-center">
+                                <span class="mr-2">📎</span>
+                                Documentos y Enlaces
+                            </h4>
+                            <div class="flex space-x-2">
+                                <button onclick="addDocument(${id})" class="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded text-sm flex items-center space-x-1">
+                                    <span>📄</span>
+                                    <span>Subir Archivo</span>
+                                </button>
+                                <button onclick="addLink(${id})" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-sm flex items-center space-x-1">
+                                    <span>🔗</span>
+                                    <span>Agregar Enlace</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="documentsList" class="space-y-2 max-h-40 overflow-y-auto">
+                            ${intervention.documents && intervention.documents.length > 0 ? 
+                                intervention.documents.map((doc, index) => `
+                                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
+                                        <div class="flex items-center space-x-3 flex-1">
+                                            <span class="text-lg">${doc.type === 'file' ? '📄' : '🔗'}</span>
+                                            <div class="flex-1 min-w-0">
+                                                ${doc.type === 'link' ? 
+                                                    `<a href="${doc.url}" target="_blank" class="text-indigo-600 hover:text-indigo-800 underline font-medium truncate block">${doc.name}</a>` :
+                                                    `<span class="font-medium text-gray-900 truncate block">${doc.name}</span>`
+                                                }
+                                                ${doc.type === 'file' ? `<span class="text-xs text-gray-500">${doc.size}</span>` : ''}
+                                                ${doc.description ? `<p class="text-xs text-gray-600 mt-1">${doc.description}</p>` : ''}
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center space-x-2">
+                                            ${doc.type === 'file' ? 
+                                                `<button onclick="downloadDocument(${doc.id})" class="text-blue-600 hover:text-blue-800 text-sm" title="Descargar">
+                                                    💾
+                                                </button>` : ''
+                                            }
+                                            <button onclick="removeDocument(${id}, ${index})" class="text-red-600 hover:text-red-800 text-sm" title="Eliminar">
+                                                🗑️
+                                            </button>
+                                        </div>
+                                    </div>
+                                `).join('') : 
+                                '<p class="text-gray-500 text-center py-4">No hay documentos agregados</p>'
+                            }
+                        </div>
+                    </div>
+
                     <!-- Actions -->
                     <div class="flex justify-between pt-6 border-t border-gray-200">
                         <button onclick="deleteIntervention(${id})" class="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg">
@@ -1846,8 +1960,118 @@
 
         // Export functions
         function exportData() {
+            // Update counters in the modal
+            const modal = document.getElementById('exportModal');
+            modal.innerHTML = modal.innerHTML.replace(/\$\{interventions\.length\}/g, interventions.length);
+            modal.innerHTML = modal.innerHTML.replace(/\$\{sessions\.length\}/g, sessions.length);
+            
+            // Set default date range to current month
+            const today = new Date();
+            const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+            const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+            
+            document.getElementById('exportDateFrom').value = firstDay.toISOString().split('T')[0];
+            document.getElementById('exportDateTo').value = lastDay.toISOString().split('T')[0];
+            
+            updateExportCounts();
             document.getElementById('exportModal').classList.remove('hidden');
             document.body.style.overflow = 'hidden';
+        }
+
+        function toggleDateInputs() {
+            const dateRangeInputs = document.getElementById('dateRangeInputs');
+            const isRangeSelected = document.querySelector('input[name="dateFilter"]:checked').value === 'range';
+            
+            if (isRangeSelected) {
+                dateRangeInputs.classList.remove('opacity-50', 'pointer-events-none');
+                document.querySelector('input[name="dateFilter"][value="range"]').checked = true;
+            } else {
+                dateRangeInputs.classList.add('opacity-50', 'pointer-events-none');
+            }
+            
+            updateExportCounts();
+        }
+
+        function setQuickDateRange(period) {
+            const today = new Date();
+            let fromDate, toDate;
+            
+            // Enable range selection
+            document.querySelector('input[name="dateFilter"][value="range"]').checked = true;
+            toggleDateInputs();
+            
+            switch (period) {
+                case 'thisMonth':
+                    fromDate = new Date(today.getFullYear(), today.getMonth(), 1);
+                    toDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                    break;
+                case 'lastMonth':
+                    fromDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+                    toDate = new Date(today.getFullYear(), today.getMonth(), 0);
+                    break;
+                case 'thisQuarter':
+                    const quarter = Math.floor(today.getMonth() / 3);
+                    fromDate = new Date(today.getFullYear(), quarter * 3, 1);
+                    toDate = new Date(today.getFullYear(), (quarter + 1) * 3, 0);
+                    break;
+                case 'thisYear':
+                    fromDate = new Date(today.getFullYear(), 0, 1);
+                    toDate = new Date(today.getFullYear(), 11, 31);
+                    break;
+            }
+            
+            document.getElementById('exportDateFrom').value = fromDate.toISOString().split('T')[0];
+            document.getElementById('exportDateTo').value = toDate.toISOString().split('T')[0];
+            
+            updateExportCounts();
+        }
+
+        function updateExportCounts() {
+            const filteredData = getFilteredExportData();
+            
+            document.getElementById('interventionsCount').textContent = filteredData.interventions.length;
+            document.getElementById('sessionsCount').textContent = filteredData.sessions.length;
+        }
+
+        function getFilteredExportData() {
+            const isRangeFilter = document.querySelector('input[name="dateFilter"]:checked').value === 'range';
+            
+            if (!isRangeFilter) {
+                return {
+                    interventions: interventions,
+                    sessions: sessions
+                };
+            }
+            
+            const fromDate = new Date(document.getElementById('exportDateFrom').value);
+            const toDate = new Date(document.getElementById('exportDateTo').value);
+            toDate.setHours(23, 59, 59, 999); // Include the entire end date
+            
+            // Filter interventions by start date
+            const filteredInterventions = interventions.filter(intervention => {
+                const startDate = new Date(intervention.startDate);
+                return startDate >= fromDate && startDate <= toDate;
+            });
+            
+            // Filter sessions by session date
+            const filteredSessions = sessions.filter(session => {
+                const sessionDate = new Date(session.date);
+                return sessionDate >= fromDate && sessionDate <= toDate;
+            });
+            
+            return {
+                interventions: filteredInterventions,
+                sessions: filteredSessions
+            };
+        }
+
+        function getExportOptions() {
+            return {
+                interventions: document.getElementById('exportInterventions').checked,
+                sessions: document.getElementById('exportSessions').checked,
+                activities: document.getElementById('exportActivities').checked,
+                documents: document.getElementById('exportDocuments').checked
+            };
         }
 
         function hideExportModal() {
@@ -1856,161 +2080,306 @@
         }
 
         function exportToPDF() {
+            const options = getExportOptions();
+            const filteredData = getFilteredExportData();
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
             
             // Title
             doc.setFontSize(20);
-            doc.text('Reporte de Intervenciones Agile', 20, 20);
+            doc.text('Reporte Dashboard Transformación', 20, 20);
             
-            // Date
+            // Date and filter info
             doc.setFontSize(12);
             doc.text(`Generado el: ${new Date().toLocaleDateString()}`, 20, 35);
             
-            let yPosition = 50;
+            const isRangeFilter = document.querySelector('input[name="dateFilter"]:checked').value === 'range';
+            if (isRangeFilter) {
+                const fromDate = document.getElementById('exportDateFrom').value;
+                const toDate = document.getElementById('exportDateTo').value;
+                doc.text(`Período: ${formatDate(fromDate)} - ${formatDate(toDate)}`, 20, 45);
+            } else {
+                doc.text('Período: Todos los datos', 20, 45);
+            }
             
-            interventions.forEach((intervention, index) => {
-                if (yPosition > 250) {
-                    doc.addPage();
-                    yPosition = 20;
-                }
+            let yPosition = 60;
+            
+            // Export Interventions
+            if (options.interventions && filteredData.interventions.length > 0) {
+                doc.setFontSize(16);
+                doc.text('INTERVENCIONES', 20, yPosition);
+                yPosition += 15;
                 
-                doc.setFontSize(14);
-                doc.text(`${index + 1}. ${intervention.title}`, 20, yPosition);
-                yPosition += 10;
-                
-                doc.setFontSize(10);
-                doc.text(`Gerencia: ${intervention.gerencia}`, 25, yPosition);
-                yPosition += 7;
-                if (intervention.quarter && intervention.year) {
-                    doc.text(`Trimestre: ${intervention.quarter} ${intervention.year}`, 25, yPosition);
+                filteredData.interventions.forEach((intervention, index) => {
+                    if (yPosition > 250) {
+                        doc.addPage();
+                        yPosition = 20;
+                    }
+                    
+                    doc.setFontSize(14);
+                    doc.text(`${index + 1}. ${intervention.title}`, 20, yPosition);
+                    yPosition += 10;
+                    
+                    doc.setFontSize(10);
+                    doc.text(`Gerencia: ${intervention.gerencia}`, 25, yPosition);
                     yPosition += 7;
-                }
-                doc.text(`Estado: ${getStatusText(intervention.status)}`, 25, yPosition);
-                yPosition += 7;
-                doc.text(`Progreso: ${intervention.progress}%`, 25, yPosition);
-                yPosition += 7;
-                doc.text(`Fechas: ${formatDate(intervention.startDate)} - ${formatDate(intervention.endDate)}`, 25, yPosition);
-                yPosition += 7;
-                
-                // Add measurement info if available
-                if (intervention.metric) {
-                    doc.text(`Métrica: ${intervention.metric}`, 25, yPosition);
+                    if (intervention.quarter && intervention.year) {
+                        doc.text(`Trimestre: ${intervention.quarter} ${intervention.year}`, 25, yPosition);
+                        yPosition += 7;
+                    }
+                    doc.text(`Estado: ${getStatusText(intervention.status)}`, 25, yPosition);
                     yPosition += 7;
-                }
-                if (intervention.baseline) {
-                    doc.text(`Valor Base: ${intervention.baseline}`, 25, yPosition);
+                    doc.text(`Progreso: ${intervention.progress}%`, 25, yPosition);
                     yPosition += 7;
-                }
-                if (intervention.target) {
-                    doc.text(`Objetivo: ${intervention.target}`, 25, yPosition);
-                    yPosition += 7;
-                }
-                if (intervention.teamSize) {
-                    doc.text(`Equipo: ${intervention.teamSize} personas`, 25, yPosition);
-                    yPosition += 7;
-                }
-                
-                // Add activities if available
-                if (intervention.activities && intervention.activities.length > 0) {
-                    yPosition += 5;
-                    doc.setFontSize(11);
-                    doc.text(`Actividades (${intervention.activities.length}):`, 25, yPosition);
+                    doc.text(`Fechas: ${formatDate(intervention.startDate)} - ${formatDate(intervention.endDate)}`, 25, yPosition);
                     yPosition += 7;
                     
-                    intervention.activities.forEach((activity, actIndex) => {
-                        if (yPosition > 270) {
-                            doc.addPage();
-                            yPosition = 20;
-                        }
-                        doc.setFontSize(9);
-                        const status = activity.completed ? '✓' : '○';
-                        doc.text(`  ${status} ${activity.title}`, 30, yPosition);
-                        yPosition += 6;
-                    });
+                    // Add measurement info if available
+                    if (intervention.metric) {
+                        doc.text(`Métrica: ${intervention.metric}`, 25, yPosition);
+                        yPosition += 7;
+                    }
+                    if (intervention.baseline) {
+                        doc.text(`Valor Base: ${intervention.baseline}`, 25, yPosition);
+                        yPosition += 7;
+                    }
+                    if (intervention.target) {
+                        doc.text(`Objetivo: ${intervention.target}`, 25, yPosition);
+                        yPosition += 7;
+                    }
+                    if (intervention.teamSize) {
+                        doc.text(`Equipo: ${intervention.teamSize} personas`, 25, yPosition);
+                        yPosition += 7;
+                    }
+                    
+                    // Add activities if available and selected
+                    if (options.activities && intervention.activities && intervention.activities.length > 0) {
+                        yPosition += 5;
+                        doc.setFontSize(11);
+                        doc.text(`Actividades (${intervention.activities.length}):`, 25, yPosition);
+                        yPosition += 7;
+                        
+                        intervention.activities.forEach((activity, actIndex) => {
+                            if (yPosition > 270) {
+                                doc.addPage();
+                                yPosition = 20;
+                            }
+                            doc.setFontSize(9);
+                            const status = activity.completed ? '✓' : '○';
+                            doc.text(`  ${status} ${activity.title}`, 30, yPosition);
+                            yPosition += 6;
+                        });
+                    }
+                    
+                    // Add documents if available and selected
+                    if (options.documents && intervention.documents && intervention.documents.length > 0) {
+                        yPosition += 5;
+                        doc.setFontSize(11);
+                        doc.text(`Documentos (${intervention.documents.length}):`, 25, yPosition);
+                        yPosition += 7;
+                        
+                        intervention.documents.forEach((document, docIndex) => {
+                            if (yPosition > 270) {
+                                doc.addPage();
+                                yPosition = 20;
+                            }
+                            doc.setFontSize(9);
+                            const icon = document.type === 'file' ? '📄' : '🔗';
+                            const info = document.type === 'file' ? 
+                                `${document.name} (${document.size})` : 
+                                `${document.name}: ${document.url}`;
+                            doc.text(`  ${icon} ${info}`, 30, yPosition);
+                            yPosition += 6;
+                        });
+                    }
+                    
+                    yPosition += 8;
+                });
+            }
+            
+            // Export Sessions
+            if (options.sessions && filteredData.sessions.length > 0) {
+                if (yPosition > 200) {
+                    doc.addPage();
+                    yPosition = 20;
+                } else {
+                    yPosition += 15;
                 }
                 
-                yPosition += 8;
-            });
+                doc.setFontSize(16);
+                doc.text('SESIONES DE COACHING', 20, yPosition);
+                yPosition += 15;
+                
+                filteredData.sessions.forEach((session, index) => {
+                    if (yPosition > 240) {
+                        doc.addPage();
+                        yPosition = 20;
+                    }
+                    
+                    doc.setFontSize(12);
+                    doc.text(`${index + 1}. ${session.interventionTitle}`, 20, yPosition);
+                    yPosition += 8;
+                    
+                    doc.setFontSize(10);
+                    doc.text(`Tipo: ${getSessionTypeText(session.type)}`, 25, yPosition);
+                    yPosition += 6;
+                    doc.text(`Fecha: ${formatDate(session.date)} | Duración: ${session.duration} min`, 25, yPosition);
+                    yPosition += 6;
+                    doc.text(`Participantes: ${session.participants} | Gerencia: ${session.gerencia}`, 25, yPosition);
+                    yPosition += 6;
+                    doc.text(`Energía: ${session.energyLevel}/10 | Efectividad: ${session.effectiveness}/10`, 25, yPosition);
+                    yPosition += 8;
+                    
+                    doc.setFontSize(9);
+                    doc.text(`Objetivos: ${session.objectives.substring(0, 80)}...`, 25, yPosition);
+                    yPosition += 6;
+                    doc.text(`Resumen: ${session.summary.substring(0, 80)}...`, 25, yPosition);
+                    yPosition += 10;
+                });
+            }
             
-            doc.save('intervenciones-agile.pdf');
+            doc.save('dashboard-transformacion.pdf');
             hideExportModal();
             showNotification('PDF generado exitosamente', 'success');
         }
 
         function exportToExcel() {
-            const ws_data = [
-                ['Título', 'Gerencia', 'Trimestre', 'Año', 'Estado', 'Progreso (%)', 'Fecha Inicio', 'Fecha Fin', 'Coach', 'Métrica', 'Valor Base', 'Objetivo', 'Tamaño Equipo', 'Descripción', 'Actividades Pendientes', 'Actividades Completadas', 'Documentos', 'Enlaces']
-            ];
-            
-            interventions.forEach(intervention => {
-                const pendingActivities = intervention.activities ? 
-                    intervention.activities.filter(a => !a.completed).map(a => a.title).join('; ') : '';
-                const completedActivities = intervention.activities ? 
-                    intervention.activities.filter(a => a.completed).map(a => a.title).join('; ') : '';
-                const documents = intervention.documents ? 
-                    intervention.documents.filter(d => d.type === 'file').map(d => d.name).join('; ') : '';
-                const links = intervention.documents ? 
-                    intervention.documents.filter(d => d.type === 'link').map(d => `${d.name}: ${d.url}`).join('; ') : '';
-                
-                ws_data.push([
-                    intervention.title,
-                    intervention.gerencia,
-                    intervention.quarter || '',
-                    intervention.year || '',
-                    getStatusText(intervention.status),
-                    intervention.progress,
-                    intervention.startDate,
-                    intervention.endDate,
-                    intervention.coach || '',
-                    intervention.metric || '',
-                    intervention.baseline || '',
-                    intervention.target || '',
-                    intervention.teamSize || '',
-                    intervention.description || '',
-                    pendingActivities,
-                    completedActivities,
-                    documents,
-                    links
-                ]);
-            });
-            
+            const options = getExportOptions();
+            const filteredData = getFilteredExportData();
             const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.aoa_to_sheet(ws_data);
             
-            // Style the header row
-            const range = XLSX.utils.decode_range(ws['!ref']);
-            for (let C = range.s.c; C <= range.e.c; ++C) {
-                const address = XLSX.utils.encode_cell({ r: 0, c: C });
-                if (!ws[address]) continue;
-                ws[address].s = {
-                    font: { bold: true },
-                    fill: { fgColor: { rgb: "4F46E5" } },
-                    color: { rgb: "FFFFFF" }
-                };
+            // Export Interventions
+            if (options.interventions && filteredData.interventions.length > 0) {
+                const interventions_headers = ['Título', 'Gerencia', 'Trimestre', 'Año', 'Estado', 'Progreso (%)', 'Fecha Inicio', 'Fecha Fin', 'Coach', 'Métrica', 'Valor Base', 'Objetivo', 'Tamaño Equipo', 'Descripción'];
+                
+                if (options.activities) {
+                    interventions_headers.push('Actividades Pendientes', 'Actividades Completadas');
+                }
+                if (options.documents) {
+                    interventions_headers.push('Documentos', 'Enlaces');
+                }
+                
+                const interventions_data = [interventions_headers];
+                
+                filteredData.interventions.forEach(intervention => {
+                    const row = [
+                        intervention.title,
+                        intervention.gerencia,
+                        intervention.quarter || '',
+                        intervention.year || '',
+                        getStatusText(intervention.status),
+                        intervention.progress,
+                        intervention.startDate,
+                        intervention.endDate,
+                        intervention.coach || '',
+                        intervention.metric || '',
+                        intervention.baseline || '',
+                        intervention.target || '',
+                        intervention.teamSize || '',
+                        intervention.description || ''
+                    ];
+                    
+                    if (options.activities) {
+                        const pendingActivities = intervention.activities ? 
+                            intervention.activities.filter(a => !a.completed).map(a => a.title).join('; ') : '';
+                        const completedActivities = intervention.activities ? 
+                            intervention.activities.filter(a => a.completed).map(a => a.title).join('; ') : '';
+                        row.push(pendingActivities, completedActivities);
+                    }
+                    
+                    if (options.documents) {
+                        const documents = intervention.documents ? 
+                            intervention.documents.filter(d => d.type === 'file').map(d => d.name).join('; ') : '';
+                        const links = intervention.documents ? 
+                            intervention.documents.filter(d => d.type === 'link').map(d => `${d.name}: ${d.url}`).join('; ') : '';
+                        row.push(documents, links);
+                    }
+                    
+                    interventions_data.push(row);
+                });
+                
+                const ws_interventions = XLSX.utils.aoa_to_sheet(interventions_data);
+                XLSX.utils.book_append_sheet(wb, ws_interventions, "Intervenciones");
             }
             
-            XLSX.utils.book_append_sheet(wb, ws, "Intervenciones");
-            XLSX.writeFile(wb, 'intervenciones-agile.xlsx');
+            // Export Sessions
+            if (options.sessions && filteredData.sessions.length > 0) {
+                const sessions_headers = ['Intervención', 'Gerencia', 'Tipo Sesión', 'Fecha', 'Duración (min)', 'Participantes', 'Objetivos', 'Resumen', 'Insights', 'Action Items', 'Energía (1-10)', 'Efectividad (1-10)'];
+                
+                if (options.documents) {
+                    sessions_headers.push('Documentos Sesión', 'Enlaces Sesión');
+                }
+                
+                const sessions_data = [sessions_headers];
+                
+                filteredData.sessions.forEach(session => {
+                    const row = [
+                        session.interventionTitle,
+                        session.gerencia,
+                        getSessionTypeText(session.type),
+                        session.date,
+                        session.duration,
+                        session.participants,
+                        session.objectives,
+                        session.summary,
+                        session.insights || '',
+                        session.actionItems || '',
+                        session.energyLevel,
+                        session.effectiveness
+                    ];
+                    
+                    if (options.documents) {
+                        const sessionDocs = session.documents ? 
+                            session.documents.filter(d => d.type === 'file').map(d => d.name).join('; ') : '';
+                        const sessionLinks = session.documents ? 
+                            session.documents.filter(d => d.type === 'link').map(d => `${d.name}: ${d.url}`).join('; ') : '';
+                        row.push(sessionDocs, sessionLinks);
+                    }
+                    
+                    sessions_data.push(row);
+                });
+                
+                const ws_sessions = XLSX.utils.aoa_to_sheet(sessions_data);
+                XLSX.utils.book_append_sheet(wb, ws_sessions, "Sesiones");
+            }
+            
+            XLSX.writeFile(wb, 'dashboard-transformacion.xlsx');
             hideExportModal();
             showNotification('Excel generado exitosamente', 'success');
         }
 
         function exportToCSV() {
-            const headers = ['Título', 'Gerencia', 'Trimestre', 'Año', 'Estado', 'Progreso (%)', 'Fecha Inicio', 'Fecha Fin', 'Coach', 'Métrica', 'Valor Base', 'Objetivo', 'Tamaño Equipo', 'Descripción', 'Actividades Pendientes', 'Actividades Completadas', 'Documentos', 'Enlaces'];
-            const csvContent = [
-                headers.join(','),
-                ...interventions.map(intervention => {
-                    const pendingActivities = intervention.activities ? 
-                        intervention.activities.filter(a => !a.completed).map(a => a.title).join('; ') : '';
-                    const completedActivities = intervention.activities ? 
-                        intervention.activities.filter(a => a.completed).map(a => a.title).join('; ') : '';
-                    const documents = intervention.documents ? 
-                        intervention.documents.filter(d => d.type === 'file').map(d => d.name).join('; ') : '';
-                    const links = intervention.documents ? 
-                        intervention.documents.filter(d => d.type === 'link').map(d => `${d.name}: ${d.url}`).join('; ') : '';
-                    
-                    return [
+            const options = getExportOptions();
+            const filteredData = getFilteredExportData();
+            let csvContent = '';
+            
+            // Add filter info
+            const isRangeFilter = document.querySelector('input[name="dateFilter"]:checked').value === 'range';
+            if (isRangeFilter) {
+                const fromDate = document.getElementById('exportDateFrom').value;
+                const toDate = document.getElementById('exportDateTo').value;
+                csvContent += `Reporte Dashboard Transformación - Período: ${formatDate(fromDate)} - ${formatDate(toDate)}\n`;
+            } else {
+                csvContent += 'Reporte Dashboard Transformación - Todos los datos\n';
+            }
+            csvContent += `Generado el: ${new Date().toLocaleDateString()}\n\n`;
+            
+            // Export Interventions
+            if (options.interventions && filteredData.interventions.length > 0) {
+                const interventions_headers = ['Título', 'Gerencia', 'Trimestre', 'Año', 'Estado', 'Progreso (%)', 'Fecha Inicio', 'Fecha Fin', 'Coach', 'Métrica', 'Valor Base', 'Objetivo', 'Tamaño Equipo', 'Descripción'];
+                
+                if (options.activities) {
+                    interventions_headers.push('Actividades Pendientes', 'Actividades Completadas');
+                }
+                if (options.documents) {
+                    interventions_headers.push('Documentos', 'Enlaces');
+                }
+                
+                csvContent += 'INTERVENCIONES\n';
+                csvContent += interventions_headers.join(',') + '\n';
+                
+                filteredData.interventions.forEach(intervention => {
+                    const row = [
                         `"${intervention.title}"`,
                         `"${intervention.gerencia}"`,
                         `"${intervention.quarter || ''}"`,
@@ -2024,30 +2393,108 @@
                         `"${intervention.baseline || ''}"`,
                         `"${intervention.target || ''}"`,
                         intervention.teamSize || '',
-                        `"${intervention.description || ''}"`,
-                        `"${pendingActivities}"`,
-                        `"${completedActivities}"`,
-                        `"${documents}"`,
-                        `"${links}"`
-                    ].join(',');
-                })
-            ].join('\n');
+                        `"${intervention.description || ''}"`
+                    ];
+                    
+                    if (options.activities) {
+                        const pendingActivities = intervention.activities ? 
+                            intervention.activities.filter(a => !a.completed).map(a => a.title).join('; ') : '';
+                        const completedActivities = intervention.activities ? 
+                            intervention.activities.filter(a => a.completed).map(a => a.title).join('; ') : '';
+                        row.push(`"${pendingActivities}"`, `"${completedActivities}"`);
+                    }
+                    
+                    if (options.documents) {
+                        const documents = intervention.documents ? 
+                            intervention.documents.filter(d => d.type === 'file').map(d => d.name).join('; ') : '';
+                        const links = intervention.documents ? 
+                            intervention.documents.filter(d => d.type === 'link').map(d => `${d.name}: ${d.url}`).join('; ') : '';
+                        row.push(`"${documents}"`, `"${links}"`);
+                    }
+                    
+                    csvContent += row.join(',') + '\n';
+                });
+                
+                csvContent += '\n';
+            }
+            
+            // Export Sessions
+            if (options.sessions && filteredData.sessions.length > 0) {
+                const sessions_headers = ['Intervención', 'Gerencia', 'Tipo Sesión', 'Fecha', 'Duración (min)', 'Participantes', 'Objetivos', 'Resumen', 'Insights', 'Action Items', 'Energía (1-10)', 'Efectividad (1-10)'];
+                
+                if (options.documents) {
+                    sessions_headers.push('Documentos Sesión', 'Enlaces Sesión');
+                }
+                
+                csvContent += 'SESIONES DE COACHING\n';
+                csvContent += sessions_headers.join(',') + '\n';
+                
+                filteredData.sessions.forEach(session => {
+                    const row = [
+                        `"${session.interventionTitle}"`,
+                        `"${session.gerencia}"`,
+                        `"${getSessionTypeText(session.type)}"`,
+                        session.date,
+                        session.duration,
+                        session.participants,
+                        `"${session.objectives}"`,
+                        `"${session.summary}"`,
+                        `"${session.insights || ''}"`,
+                        `"${session.actionItems || ''}"`,
+                        session.energyLevel,
+                        session.effectiveness
+                    ];
+                    
+                    if (options.documents) {
+                        const sessionDocs = session.documents ? 
+                            session.documents.filter(d => d.type === 'file').map(d => d.name).join('; ') : '';
+                        const sessionLinks = session.documents ? 
+                            session.documents.filter(d => d.type === 'link').map(d => `${d.name}: ${d.url}`).join('; ') : '';
+                        row.push(`"${sessionDocs}"`, `"${sessionLinks}"`);
+                    }
+                    
+                    csvContent += row.join(',') + '\n';
+                });
+            }
             
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = 'intervenciones-agile.csv';
+            link.download = 'dashboard-transformacion.csv';
             link.click();
             hideExportModal();
             showNotification('CSV generado exitosamente', 'success');
         }
 
         function exportToJSON() {
-            const dataStr = JSON.stringify(interventions, null, 2);
+            const options = getExportOptions();
+            const filteredData = getFilteredExportData();
+            const exportData = {};
+            
+            if (options.interventions) {
+                exportData.interventions = filteredData.interventions;
+            }
+            
+            if (options.sessions) {
+                exportData.sessions = filteredData.sessions;
+            }
+            
+            // Add filter information
+            const isRangeFilter = document.querySelector('input[name="dateFilter"]:checked').value === 'range';
+            exportData.filterInfo = {
+                type: isRangeFilter ? 'range' : 'all',
+                fromDate: isRangeFilter ? document.getElementById('exportDateFrom').value : null,
+                toDate: isRangeFilter ? document.getElementById('exportDateTo').value : null
+            };
+            
+            exportData.exportDate = new Date().toISOString();
+            exportData.exportOptions = options;
+            
+            const dataStr = JSON.stringify(exportData, null, 2);
             const blob = new Blob([dataStr], { type: 'application/json' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = 'respaldo-intervenciones.json';
+            link.download = 'respaldo-dashboard-transformacion.json';
             link.click();
             hideExportModal();
             showNotification('Respaldo JSON generado exitosamente', 'success');
@@ -2098,5 +2545,5 @@
             }, 3000);
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97fb1a03471a1522',t:'MTc1Nzk3MDUzMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97fb293a021c1522',t:'MTc1Nzk3MTE1My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
