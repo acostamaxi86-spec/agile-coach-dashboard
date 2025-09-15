@@ -615,6 +615,19 @@
 
         // Initialize app
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize sessions array for existing interventions
+            interventions.forEach(intervention => {
+                if (!intervention.sessions) {
+                    intervention.sessions = [];
+                }
+                if (!intervention.activities) {
+                    intervention.activities = [];
+                }
+                if (!intervention.notes) {
+                    intervention.notes = [];
+                }
+            });
+            
             loadInterventions();
             updateDashboard();
             setupEventListeners();
@@ -654,6 +667,26 @@
             
             document.getElementById('newSessionForm').addEventListener('submit', function(e) {
                 e.preventDefault();
+                
+                // Validate required fields
+                const requiredFields = ['sessionIntervention', 'sessionType', 'sessionDate', 'sessionObjectives', 'sessionSummary'];
+                let isValid = true;
+                
+                requiredFields.forEach(fieldId => {
+                    const field = document.getElementById(fieldId);
+                    if (!field.value.trim()) {
+                        field.style.borderColor = '#ef4444';
+                        isValid = false;
+                    } else {
+                        field.style.borderColor = '#d1d5db';
+                    }
+                });
+                
+                if (!isValid) {
+                    showNotification('Por favor completa todos los campos requeridos', 'error');
+                    return;
+                }
+                
                 createSession();
             });
         }
@@ -908,7 +941,8 @@
                 target: document.getElementById('interventionTarget').value,
                 createdAt: new Date().toISOString(),
                 activities: [],
-                notes: []
+                notes: [],
+                sessions: []
             };
 
             interventions.push(intervention);
@@ -970,12 +1004,17 @@
             const interventionId = parseInt(document.getElementById('sessionIntervention').value);
             const intervention = interventions.find(i => i.id === interventionId);
             
+            if (!intervention) {
+                showNotification('Por favor selecciona una intervención válida', 'error');
+                return;
+            }
+            
             const session = {
                 id: Date.now(),
                 interventionId: interventionId,
-                interventionTitle: intervention ? intervention.title : '',
-                teamName: intervention ? intervention.teamName : '',
-                gerencia: intervention ? intervention.gerencia : '',
+                interventionTitle: intervention.title,
+                teamName: intervention.teamName || '',
+                gerencia: intervention.gerencia,
                 type: document.getElementById('sessionType').value,
                 date: document.getElementById('sessionDate').value,
                 duration: parseInt(document.getElementById('sessionDuration').value),
@@ -991,10 +1030,11 @@
 
             sessions.push(session);
             
-            // Also add to intervention's sessions array
-            if (intervention) {
-                intervention.sessions.push(session.id);
+            // Initialize sessions array if it doesn't exist
+            if (!intervention.sessions) {
+                intervention.sessions = [];
             }
+            intervention.sessions.push(session.id);
             
             saveSessions();
             saveInterventions();
@@ -1121,7 +1161,7 @@
                 
                 // Remove from intervention's sessions array
                 interventions.forEach(intervention => {
-                    if (intervention.sessions) {
+                    if (intervention.sessions && Array.isArray(intervention.sessions)) {
                         intervention.sessions = intervention.sessions.filter(id => id !== sessionId);
                     }
                 });
@@ -1826,5 +1866,5 @@
             }, 3000);
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97faf7298488758b',t:'MTc1Nzk2OTEwMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97fb0b09557bdfb2',t:'MTc1Nzk2OTkxNi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
