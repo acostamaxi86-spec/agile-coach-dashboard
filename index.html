@@ -558,6 +558,29 @@
                         </div>
                     </div>
                     
+                    <!-- Session Documents Section -->
+                    <div class="border-t border-gray-200 pt-6">
+                        <h4 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                            <span class="mr-2">📎</span>
+                            Documentos y Enlaces de la Sesión
+                        </h4>
+                        
+                        <div class="flex space-x-3 mb-4">
+                            <button type="button" onclick="addSessionDocument()" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm flex items-center space-x-2">
+                                <span>📄</span>
+                                <span>Subir Archivo</span>
+                            </button>
+                            <button type="button" onclick="addSessionLink()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm flex items-center space-x-2">
+                                <span>🔗</span>
+                                <span>Agregar Enlace</span>
+                            </button>
+                        </div>
+                        
+                        <div id="sessionDocumentsList" class="space-y-2 max-h-32 overflow-y-auto">
+                            <p class="text-sm text-gray-500">No hay documentos agregados</p>
+                        </div>
+                    </div>
+                    
                     <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200">
                         <button type="button" onclick="hideNewSessionModal()" 
                                 class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
@@ -612,6 +635,7 @@
         let interventions = JSON.parse(localStorage.getItem('interventions')) || [];
         let sessions = JSON.parse(localStorage.getItem('sessions')) || [];
         let currentInterventionId = null;
+        let sessionDocuments = [];
 
         // Initialize app
         document.addEventListener('DOMContentLoaded', function() {
@@ -625,6 +649,9 @@
                 }
                 if (!intervention.notes) {
                     intervention.notes = [];
+                }
+                if (!intervention.documents) {
+                    intervention.documents = [];
                 }
             });
             
@@ -942,7 +969,8 @@
                 createdAt: new Date().toISOString(),
                 activities: [],
                 notes: [],
-                sessions: []
+                sessions: [],
+                documents: []
             };
 
             interventions.push(intervention);
@@ -978,6 +1006,8 @@
         function hideNewSessionModal() {
             document.getElementById('newSessionModal').classList.add('hidden');
             document.getElementById('newSessionForm').reset();
+            sessionDocuments = [];
+            updateSessionDocumentsList();
         }
 
         function populateSessionInterventions() {
@@ -1025,6 +1055,7 @@
                 actionItems: document.getElementById('sessionActionItems').value,
                 energyLevel: parseInt(document.getElementById('sessionEnergyLevel').value),
                 effectiveness: parseInt(document.getElementById('sessionEffectiveness').value),
+                documents: [...sessionDocuments], // Include session documents
                 createdAt: new Date().toISOString()
             };
 
@@ -1035,6 +1066,9 @@
                 intervention.sessions = [];
             }
             intervention.sessions.push(session.id);
+            
+            // Clear session documents for next session
+            sessionDocuments = [];
             
             saveSessions();
             saveInterventions();
@@ -1118,6 +1152,22 @@
                         <div>
                             <h4 class="text-sm font-medium text-gray-700 mb-1">Action Items:</h4>
                             <p class="text-sm text-gray-600">${session.actionItems}</p>
+                        </div>
+                        ` : ''}
+                        ${session.documents && session.documents.length > 0 ? `
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-700 mb-2">Documentos y Enlaces:</h4>
+                            <div class="space-y-1">
+                                ${session.documents.map(doc => `
+                                    <div class="flex items-center space-x-2 text-sm">
+                                        <span>${doc.type === 'file' ? '📄' : '🔗'}</span>
+                                        ${doc.type === 'link' ? 
+                                            `<a href="${doc.url}" target="_blank" class="text-indigo-600 hover:text-indigo-800 underline">${doc.name}</a>` :
+                                            `<span class="text-gray-600">${doc.name}</span>`
+                                        }
+                                    </div>
+                                `).join('')}
+                            </div>
                         </div>
                         ` : ''}
                     </div>
@@ -1594,6 +1644,176 @@
             }
         }
 
+        // Document management functions for interventions
+        function addDocument(id) {
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = '*/*';
+            fileInput.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const intervention = interventions.find(i => i.id === id);
+                        if (intervention) {
+                            const document = {
+                                id: Date.now(),
+                                type: 'file',
+                                name: file.name,
+                                size: formatFileSize(file.size),
+                                data: e.target.result,
+                                description: prompt('Descripción del documento (opcional):') || '',
+                                timestamp: new Date().toISOString()
+                            };
+                            intervention.documents.push(document);
+                            saveInterventions();
+                            showInterventionDetail(id);
+                            showNotification('Documento agregado exitosamente', 'success');
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+            fileInput.click();
+        }
+
+        function addLink(id) {
+            const url = prompt('URL del enlace:');
+            if (url) {
+                const name = prompt('Nombre del enlace:') || url;
+                const description = prompt('Descripción del enlace (opcional):') || '';
+                
+                const intervention = interventions.find(i => i.id === id);
+                if (intervention) {
+                    const document = {
+                        id: Date.now(),
+                        type: 'link',
+                        name: name,
+                        url: url,
+                        description: description,
+                        timestamp: new Date().toISOString()
+                    };
+                    intervention.documents.push(document);
+                    saveInterventions();
+                    showInterventionDetail(id);
+                    showNotification('Enlace agregado exitosamente', 'success');
+                }
+            }
+        }
+
+        function removeDocument(id, docIndex) {
+            if (confirm('¿Estás seguro de que quieres eliminar este documento?')) {
+                const intervention = interventions.find(i => i.id === id);
+                if (intervention) {
+                    intervention.documents.splice(docIndex, 1);
+                    saveInterventions();
+                    showInterventionDetail(id);
+                    showNotification('Documento eliminado', 'success');
+                }
+            }
+        }
+
+        function downloadDocument(docId) {
+            // Find document in all interventions
+            let document = null;
+            for (const intervention of interventions) {
+                if (intervention.documents) {
+                    document = intervention.documents.find(doc => doc.id == docId);
+                    if (document) break;
+                }
+            }
+            
+            if (document && document.type === 'file') {
+                const link = document.createElement('a');
+                link.href = document.data;
+                link.download = document.name;
+                link.click();
+            }
+        }
+
+        // Session document functions
+        function addSessionDocument() {
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = '*/*';
+            fileInput.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const document = {
+                            id: Date.now(),
+                            type: 'file',
+                            name: file.name,
+                            size: formatFileSize(file.size),
+                            data: e.target.result,
+                            description: prompt('Descripción del documento (opcional):') || '',
+                            timestamp: new Date().toISOString()
+                        };
+                        sessionDocuments.push(document);
+                        updateSessionDocumentsList();
+                        showNotification('Documento agregado a la sesión', 'success');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+            fileInput.click();
+        }
+
+        function addSessionLink() {
+            const url = prompt('URL del enlace:');
+            if (url) {
+                const name = prompt('Nombre del enlace:') || url;
+                const description = prompt('Descripción del enlace (opcional):') || '';
+                
+                const document = {
+                    id: Date.now(),
+                    type: 'link',
+                    name: name,
+                    url: url,
+                    description: description,
+                    timestamp: new Date().toISOString()
+                };
+                sessionDocuments.push(document);
+                updateSessionDocumentsList();
+                showNotification('Enlace agregado a la sesión', 'success');
+            }
+        }
+
+        function updateSessionDocumentsList() {
+            const container = document.getElementById('sessionDocumentsList');
+            if (sessionDocuments.length === 0) {
+                container.innerHTML = '<p class="text-sm text-gray-500">No hay documentos agregados</p>';
+                return;
+            }
+            
+            container.innerHTML = sessionDocuments.map((doc, index) => `
+                <div class="flex items-center justify-between p-2 bg-gray-50 rounded border">
+                    <div class="flex items-center space-x-2 flex-1">
+                        <span class="text-sm">${doc.type === 'file' ? '📄' : '🔗'}</span>
+                        <span class="text-sm font-medium text-gray-900 truncate">${doc.name}</span>
+                        ${doc.type === 'file' ? `<span class="text-xs text-gray-500">(${doc.size})</span>` : ''}
+                    </div>
+                    <button onclick="removeSessionDocument(${index})" class="text-red-600 hover:text-red-800 text-sm">
+                        🗑️
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function removeSessionDocument(index) {
+            sessionDocuments.splice(index, 1);
+            updateSessionDocumentsList();
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
         function deleteIntervention(id) {
             if (confirm('¿Estás seguro de que quieres eliminar esta intervención? Esta acción no se puede deshacer.')) {
                 interventions = interventions.filter(i => i.id !== id);
@@ -1720,7 +1940,7 @@
 
         function exportToExcel() {
             const ws_data = [
-                ['Título', 'Gerencia', 'Trimestre', 'Año', 'Estado', 'Progreso (%)', 'Fecha Inicio', 'Fecha Fin', 'Coach', 'Métrica', 'Valor Base', 'Objetivo', 'Tamaño Equipo', 'Descripción', 'Actividades Pendientes', 'Actividades Completadas']
+                ['Título', 'Gerencia', 'Trimestre', 'Año', 'Estado', 'Progreso (%)', 'Fecha Inicio', 'Fecha Fin', 'Coach', 'Métrica', 'Valor Base', 'Objetivo', 'Tamaño Equipo', 'Descripción', 'Actividades Pendientes', 'Actividades Completadas', 'Documentos', 'Enlaces']
             ];
             
             interventions.forEach(intervention => {
@@ -1728,6 +1948,10 @@
                     intervention.activities.filter(a => !a.completed).map(a => a.title).join('; ') : '';
                 const completedActivities = intervention.activities ? 
                     intervention.activities.filter(a => a.completed).map(a => a.title).join('; ') : '';
+                const documents = intervention.documents ? 
+                    intervention.documents.filter(d => d.type === 'file').map(d => d.name).join('; ') : '';
+                const links = intervention.documents ? 
+                    intervention.documents.filter(d => d.type === 'link').map(d => `${d.name}: ${d.url}`).join('; ') : '';
                 
                 ws_data.push([
                     intervention.title,
@@ -1745,7 +1969,9 @@
                     intervention.teamSize || '',
                     intervention.description || '',
                     pendingActivities,
-                    completedActivities
+                    completedActivities,
+                    documents,
+                    links
                 ]);
             });
             
@@ -1771,7 +1997,7 @@
         }
 
         function exportToCSV() {
-            const headers = ['Título', 'Gerencia', 'Trimestre', 'Año', 'Estado', 'Progreso (%)', 'Fecha Inicio', 'Fecha Fin', 'Coach', 'Métrica', 'Valor Base', 'Objetivo', 'Tamaño Equipo', 'Descripción', 'Actividades Pendientes', 'Actividades Completadas'];
+            const headers = ['Título', 'Gerencia', 'Trimestre', 'Año', 'Estado', 'Progreso (%)', 'Fecha Inicio', 'Fecha Fin', 'Coach', 'Métrica', 'Valor Base', 'Objetivo', 'Tamaño Equipo', 'Descripción', 'Actividades Pendientes', 'Actividades Completadas', 'Documentos', 'Enlaces'];
             const csvContent = [
                 headers.join(','),
                 ...interventions.map(intervention => {
@@ -1779,6 +2005,10 @@
                         intervention.activities.filter(a => !a.completed).map(a => a.title).join('; ') : '';
                     const completedActivities = intervention.activities ? 
                         intervention.activities.filter(a => a.completed).map(a => a.title).join('; ') : '';
+                    const documents = intervention.documents ? 
+                        intervention.documents.filter(d => d.type === 'file').map(d => d.name).join('; ') : '';
+                    const links = intervention.documents ? 
+                        intervention.documents.filter(d => d.type === 'link').map(d => `${d.name}: ${d.url}`).join('; ') : '';
                     
                     return [
                         `"${intervention.title}"`,
@@ -1796,7 +2026,9 @@
                         intervention.teamSize || '',
                         `"${intervention.description || ''}"`,
                         `"${pendingActivities}"`,
-                        `"${completedActivities}"`
+                        `"${completedActivities}"`,
+                        `"${documents}"`,
+                        `"${links}"`
                     ].join(',');
                 })
             ].join('\n');
@@ -1866,5 +2098,5 @@
             }, 3000);
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97fb0b09557bdfb2',t:'MTc1Nzk2OTkxNi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97fb1a03471a1522',t:'MTc1Nzk3MDUzMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
