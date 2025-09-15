@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agile Coach Dashboard</title>
+    <title>Dashboard Transformación</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -17,6 +17,10 @@
         .fade-in { animation: fadeIn 0.5s ease-in; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .modal-backdrop { backdrop-filter: blur(4px); }
+        .typing-indicator { animation: typing 1.5s infinite; }
+        @keyframes typing { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0.3; } }
+        .chat-message { animation: slideIn 0.3s ease-out; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -29,11 +33,15 @@
                         <span class="text-xl font-bold">🎯</span>
                     </div>
                     <div>
-                        <h1 class="text-2xl font-bold">Agile Coach Dashboard</h1>
+                        <h1 class="text-2xl font-bold">Dashboard Transformación</h1>
                         <p class="text-blue-100 text-sm">Gestión de Intervenciones y Seguimiento</p>
                     </div>
                 </div>
                 <div class="flex space-x-3">
+                    <button onclick="showEvaluationAssistant()" class="bg-white bg-opacity-20 hover:bg-opacity-30 px-4 py-2 rounded-lg transition-all duration-200 flex items-center space-x-2">
+                        <span>🤖</span>
+                        <span class="hidden sm:inline">Asistente IA</span>
+                    </button>
                     <button onclick="exportData()" class="bg-white bg-opacity-20 hover:bg-opacity-30 px-4 py-2 rounded-lg transition-all duration-200 flex items-center space-x-2">
                         <span>📊</span>
                         <span class="hidden sm:inline">Exportar Datos</span>
@@ -139,6 +147,86 @@
             </div>
         </div>
     </main>
+
+    <!-- AI Evaluation Assistant Modal -->
+    <div id="evaluationAssistantModal" class="fixed inset-0 bg-black bg-opacity-50 modal-backdrop hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-screen overflow-hidden flex flex-col">
+                <div class="p-6 border-b border-gray-200 bg-gradient-to-r from-purple-600 to-blue-600 text-white">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                                <span class="text-xl">🤖</span>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-semibold">Asistente de Evaluación IA</h3>
+                                <p class="text-purple-100 text-sm">Análisis inteligente de tus intervenciones</p>
+                            </div>
+                        </div>
+                        <button onclick="hideEvaluationAssistant()" class="text-white hover:text-purple-200">
+                            <span class="text-2xl">×</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Quick Actions -->
+                <div class="p-4 bg-gray-50 border-b border-gray-200">
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="askAssistant('Analiza el progreso general de mis intervenciones')" 
+                                class="px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-full text-sm transition-colors">
+                            📊 Análisis General
+                        </button>
+                        <button onclick="askAssistant('¿Qué intervenciones están en riesgo de no cumplir sus fechas?')" 
+                                class="px-3 py-1 bg-red-100 hover:bg-red-200 text-red-800 rounded-full text-sm transition-colors">
+                            ⚠️ Riesgos
+                        </button>
+                        <button onclick="askAssistant('Dame recomendaciones para mejorar el rendimiento del equipo')" 
+                                class="px-3 py-1 bg-green-100 hover:bg-green-200 text-green-800 rounded-full text-sm transition-colors">
+                            💡 Recomendaciones
+                        </button>
+                        <button onclick="askAssistant('Compara el rendimiento entre diferentes gerencias')" 
+                                class="px-3 py-1 bg-purple-100 hover:bg-purple-200 text-purple-800 rounded-full text-sm transition-colors">
+                            📈 Comparativas
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Chat Area -->
+                <div id="chatArea" class="flex-1 overflow-y-auto p-6 space-y-4 min-h-96 max-h-96">
+                    <div class="chat-message">
+                        <div class="flex items-start space-x-3">
+                            <div class="w-8 h-8 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full flex items-center justify-center">
+                                <span class="text-white text-sm">🤖</span>
+                            </div>
+                            <div class="flex-1 bg-gray-100 rounded-lg p-4">
+                                <p class="text-gray-800">¡Hola! Soy tu asistente de evaluación IA. Puedo ayudarte a:</p>
+                                <ul class="mt-2 text-sm text-gray-600 space-y-1">
+                                    <li>• Analizar el progreso de tus intervenciones</li>
+                                    <li>• Identificar riesgos y oportunidades</li>
+                                    <li>• Generar insights sobre el rendimiento</li>
+                                    <li>• Sugerir mejoras y próximos pasos</li>
+                                </ul>
+                                <p class="mt-2 text-gray-800">¿En qué te puedo ayudar hoy?</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Input Area -->
+                <div class="p-4 border-t border-gray-200 bg-white">
+                    <div class="flex space-x-3">
+                        <input type="text" id="assistantInput" placeholder="Pregúntame sobre tus intervenciones..." 
+                               class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                               onkeypress="if(event.key==='Enter') sendMessage()">
+                        <button onclick="sendMessage()" 
+                                class="px-6 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg transition-all duration-200">
+                            Enviar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- New Intervention Modal -->
     <div id="newInterventionModal" class="fixed inset-0 bg-black bg-opacity-50 modal-backdrop hidden z-50">
@@ -371,6 +459,226 @@
                 e.preventDefault();
                 createIntervention();
             });
+        }
+
+        // AI Assistant Functions
+        function showEvaluationAssistant() {
+            document.getElementById('evaluationAssistantModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function hideEvaluationAssistant() {
+            document.getElementById('evaluationAssistantModal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+
+        function askAssistant(question) {
+            document.getElementById('assistantInput').value = question;
+            sendMessage();
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('assistantInput');
+            const message = input.value.trim();
+            if (!message) return;
+
+            // Add user message to chat
+            addMessageToChat(message, 'user');
+            input.value = '';
+
+            // Show typing indicator
+            showTypingIndicator();
+
+            // Simulate AI response after a delay
+            setTimeout(() => {
+                hideTypingIndicator();
+                const response = generateAIResponse(message);
+                addMessageToChat(response, 'assistant');
+            }, 1500 + Math.random() * 1000);
+        }
+
+        function addMessageToChat(message, sender) {
+            const chatArea = document.getElementById('chatArea');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'chat-message';
+
+            if (sender === 'user') {
+                messageDiv.innerHTML = `
+                    <div class="flex items-start space-x-3 justify-end">
+                        <div class="bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg p-4 max-w-xs">
+                            <p>${message}</p>
+                        </div>
+                        <div class="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+                            <span class="text-sm">👤</span>
+                        </div>
+                    </div>
+                `;
+            } else {
+                messageDiv.innerHTML = `
+                    <div class="flex items-start space-x-3">
+                        <div class="w-8 h-8 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full flex items-center justify-center">
+                            <span class="text-white text-sm">🤖</span>
+                        </div>
+                        <div class="flex-1 bg-gray-100 rounded-lg p-4">
+                            <div class="text-gray-800">${message}</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            chatArea.appendChild(messageDiv);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        function showTypingIndicator() {
+            const chatArea = document.getElementById('chatArea');
+            const typingDiv = document.createElement('div');
+            typingDiv.id = 'typingIndicator';
+            typingDiv.className = 'chat-message';
+            typingDiv.innerHTML = `
+                <div class="flex items-start space-x-3">
+                    <div class="w-8 h-8 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full flex items-center justify-center">
+                        <span class="text-white text-sm">🤖</span>
+                    </div>
+                    <div class="bg-gray-100 rounded-lg p-4">
+                        <div class="typing-indicator text-gray-500">Analizando datos...</div>
+                    </div>
+                </div>
+            `;
+            chatArea.appendChild(typingDiv);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        function hideTypingIndicator() {
+            const typingIndicator = document.getElementById('typingIndicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        }
+
+        function generateAIResponse(question) {
+            const lowerQuestion = question.toLowerCase();
+            
+            // Analyze current data
+            const totalInterventions = interventions.length;
+            const inProgress = interventions.filter(i => i.status === 'en-progreso').length;
+            const completed = interventions.filter(i => i.status === 'completada').length;
+            const avgProgress = totalInterventions > 0 ? 
+                Math.round(interventions.reduce((sum, i) => sum + i.progress, 0) / totalInterventions) : 0;
+            
+            // Calculate risks
+            const today = new Date();
+            const riskyInterventions = interventions.filter(i => {
+                const endDate = new Date(i.endDate);
+                const daysLeft = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24));
+                return daysLeft < 7 && i.progress < 80 && i.status !== 'completada';
+            });
+
+            // Generate contextual responses
+            if (lowerQuestion.includes('progreso') || lowerQuestion.includes('análisis general')) {
+                return `
+                    <strong>📊 Análisis General de Progreso:</strong><br><br>
+                    • <strong>Total de intervenciones:</strong> ${totalInterventions}<br>
+                    • <strong>En progreso:</strong> ${inProgress} (${Math.round(inProgress/totalInterventions*100)}%)<br>
+                    • <strong>Completadas:</strong> ${completed} (${Math.round(completed/totalInterventions*100)}%)<br>
+                    • <strong>Progreso promedio:</strong> ${avgProgress}%<br><br>
+                    ${avgProgress > 70 ? 
+                        '✅ <strong>Buen rendimiento general.</strong> La mayoría de intervenciones están avanzando bien.' :
+                        '⚠️ <strong>Atención necesaria.</strong> Considera revisar las intervenciones con menor progreso.'
+                    }
+                `;
+            }
+            
+            if (lowerQuestion.includes('riesgo') || lowerQuestion.includes('fecha')) {
+                if (riskyInterventions.length === 0) {
+                    return `
+                        <strong>✅ Excelente noticia!</strong><br><br>
+                        No hay intervenciones en riesgo inmediato. Todas las intervenciones activas están en buen camino para cumplir sus fechas límite.
+                    `;
+                } else {
+                    const riskyList = riskyInterventions.map(i => 
+                        `• <strong>${i.title}</strong> (${i.progress}% completado, vence ${formatDate(i.endDate)})`
+                    ).join('<br>');
+                    
+                    return `
+                        <strong>⚠️ Intervenciones en Riesgo:</strong><br><br>
+                        ${riskyList}<br><br>
+                        <strong>Recomendaciones:</strong><br>
+                        • Revisar el alcance y priorizar tareas críticas<br>
+                        • Considerar recursos adicionales<br>
+                        • Comunicar posibles ajustes de fechas
+                    `;
+                }
+            }
+            
+            if (lowerQuestion.includes('recomendacion') || lowerQuestion.includes('mejora')) {
+                const recommendations = [];
+                
+                if (avgProgress < 50) {
+                    recommendations.push('• Implementar reuniones de seguimiento más frecuentes');
+                    recommendations.push('• Revisar y simplificar el alcance de las intervenciones');
+                }
+                
+                if (inProgress > completed * 2) {
+                    recommendations.push('• Enfocar esfuerzos en completar intervenciones existentes antes de iniciar nuevas');
+                }
+                
+                const gerencias = [...new Set(interventions.map(i => i.gerencia))];
+                if (gerencias.length > 3) {
+                    recommendations.push('• Considerar crear equipos de apoyo transversales entre gerencias');
+                }
+                
+                recommendations.push('• Establecer métricas de éxito más específicas para cada intervención');
+                recommendations.push('• Implementar retrospectivas regulares para identificar impedimentos');
+                
+                return `
+                    <strong>💡 Recomendaciones para Mejorar:</strong><br><br>
+                    ${recommendations.join('<br>')}<br><br>
+                    <strong>Próximos pasos sugeridos:</strong><br>
+                    • Priorizar las intervenciones con mayor impacto<br>
+                    • Establecer checkpoints semanales<br>
+                    • Documentar lecciones aprendidas
+                `;
+            }
+            
+            if (lowerQuestion.includes('compar') || lowerQuestion.includes('gerencia')) {
+                const gerenciaStats = {};
+                interventions.forEach(i => {
+                    if (!gerenciaStats[i.gerencia]) {
+                        gerenciaStats[i.gerencia] = { total: 0, completed: 0, avgProgress: 0 };
+                    }
+                    gerenciaStats[i.gerencia].total++;
+                    if (i.status === 'completada') gerenciaStats[i.gerencia].completed++;
+                    gerenciaStats[i.gerencia].avgProgress += i.progress;
+                });
+                
+                let comparison = '<strong>📈 Comparativa por Gerencias:</strong><br><br>';
+                Object.keys(gerenciaStats).forEach(gerencia => {
+                    const stats = gerenciaStats[gerencia];
+                    const avgProg = Math.round(stats.avgProgress / stats.total);
+                    const completionRate = Math.round((stats.completed / stats.total) * 100);
+                    
+                    comparison += `<strong>${gerencia}:</strong><br>`;
+                    comparison += `• ${stats.total} intervenciones (${completionRate}% completadas)<br>`;
+                    comparison += `• Progreso promedio: ${avgProg}%<br><br>`;
+                });
+                
+                return comparison + '<strong>💡 Considera compartir mejores prácticas entre gerencias con mejor rendimiento.</strong>';
+            }
+            
+            // Default response for other questions
+            return `
+                <strong>🤖 Análisis Personalizado:</strong><br><br>
+                Basándome en tus datos actuales:<br><br>
+                • Tienes ${totalInterventions} intervenciones registradas<br>
+                • El progreso promedio es del ${avgProgress}%<br>
+                • ${completed} intervenciones han sido completadas<br><br>
+                ${totalInterventions === 0 ? 
+                    'Te sugiero comenzar registrando algunas intervenciones para poder darte análisis más específicos.' :
+                    '¿Te gustaría que analice algún aspecto específico de tus intervenciones?'
+                }<br><br>
+                <em>Puedes preguntarme sobre riesgos, comparativas entre gerencias, o recomendaciones específicas.</em>
+            `;
         }
 
         function showNewInterventionModal() {
@@ -890,6 +1198,10 @@
                 doc.setFontSize(10);
                 doc.text(`Gerencia: ${intervention.gerencia}`, 25, yPosition);
                 yPosition += 7;
+                if (intervention.quarter && intervention.year) {
+                    doc.text(`Trimestre: ${intervention.quarter} ${intervention.year}`, 25, yPosition);
+                    yPosition += 7;
+                }
                 doc.text(`Estado: ${getStatusText(intervention.status)}`, 25, yPosition);
                 yPosition += 7;
                 doc.text(`Progreso: ${intervention.progress}%`, 25, yPosition);
@@ -915,6 +1227,25 @@
                     yPosition += 7;
                 }
                 
+                // Add activities if available
+                if (intervention.activities && intervention.activities.length > 0) {
+                    yPosition += 5;
+                    doc.setFontSize(11);
+                    doc.text(`Actividades (${intervention.activities.length}):`, 25, yPosition);
+                    yPosition += 7;
+                    
+                    intervention.activities.forEach((activity, actIndex) => {
+                        if (yPosition > 270) {
+                            doc.addPage();
+                            yPosition = 20;
+                        }
+                        doc.setFontSize(9);
+                        const status = activity.completed ? '✓' : '○';
+                        doc.text(`  ${status} ${activity.title}`, 30, yPosition);
+                        yPosition += 6;
+                    });
+                }
+                
                 yPosition += 8;
             });
             
@@ -925,10 +1256,15 @@
 
         function exportToExcel() {
             const ws_data = [
-                ['Título', 'Gerencia', 'Trimestre', 'Año', 'Estado', 'Progreso (%)', 'Fecha Inicio', 'Fecha Fin', 'Coach', 'Métrica', 'Valor Base', 'Objetivo', 'Tamaño Equipo', 'Descripción']
+                ['Título', 'Gerencia', 'Trimestre', 'Año', 'Estado', 'Progreso (%)', 'Fecha Inicio', 'Fecha Fin', 'Coach', 'Métrica', 'Valor Base', 'Objetivo', 'Tamaño Equipo', 'Descripción', 'Actividades Pendientes', 'Actividades Completadas']
             ];
             
             interventions.forEach(intervention => {
+                const pendingActivities = intervention.activities ? 
+                    intervention.activities.filter(a => !a.completed).map(a => a.title).join('; ') : '';
+                const completedActivities = intervention.activities ? 
+                    intervention.activities.filter(a => a.completed).map(a => a.title).join('; ') : '';
+                
                 ws_data.push([
                     intervention.title,
                     intervention.gerencia,
@@ -943,7 +1279,9 @@
                     intervention.baseline || '',
                     intervention.target || '',
                     intervention.teamSize || '',
-                    intervention.description || ''
+                    intervention.description || '',
+                    pendingActivities,
+                    completedActivities
                 ]);
             });
             
@@ -969,25 +1307,34 @@
         }
 
         function exportToCSV() {
-            const headers = ['Título', 'Gerencia', 'Trimestre', 'Año', 'Estado', 'Progreso (%)', 'Fecha Inicio', 'Fecha Fin', 'Coach', 'Métrica', 'Valor Base', 'Objetivo', 'Tamaño Equipo', 'Descripción'];
+            const headers = ['Título', 'Gerencia', 'Trimestre', 'Año', 'Estado', 'Progreso (%)', 'Fecha Inicio', 'Fecha Fin', 'Coach', 'Métrica', 'Valor Base', 'Objetivo', 'Tamaño Equipo', 'Descripción', 'Actividades Pendientes', 'Actividades Completadas'];
             const csvContent = [
                 headers.join(','),
-                ...interventions.map(intervention => [
-                    `"${intervention.title}"`,
-                    `"${intervention.gerencia}"`,
-                    `"${intervention.quarter || ''}"`,
-                    intervention.year || '',
-                    `"${getStatusText(intervention.status)}"`,
-                    intervention.progress,
-                    intervention.startDate,
-                    intervention.endDate,
-                    `"${intervention.coach || ''}"`,
-                    `"${intervention.metric || ''}"`,
-                    `"${intervention.baseline || ''}"`,
-                    `"${intervention.target || ''}"`,
-                    intervention.teamSize || '',
-                    `"${intervention.description || ''}"`
-                ].join(','))
+                ...interventions.map(intervention => {
+                    const pendingActivities = intervention.activities ? 
+                        intervention.activities.filter(a => !a.completed).map(a => a.title).join('; ') : '';
+                    const completedActivities = intervention.activities ? 
+                        intervention.activities.filter(a => a.completed).map(a => a.title).join('; ') : '';
+                    
+                    return [
+                        `"${intervention.title}"`,
+                        `"${intervention.gerencia}"`,
+                        `"${intervention.quarter || ''}"`,
+                        intervention.year || '',
+                        `"${getStatusText(intervention.status)}"`,
+                        intervention.progress,
+                        intervention.startDate,
+                        intervention.endDate,
+                        `"${intervention.coach || ''}"`,
+                        `"${intervention.metric || ''}"`,
+                        `"${intervention.baseline || ''}"`,
+                        `"${intervention.target || ''}"`,
+                        intervention.teamSize || '',
+                        `"${intervention.description || ''}"`,
+                        `"${pendingActivities}"`,
+                        `"${completedActivities}"`
+                    ].join(',');
+                })
             ].join('\n');
             
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -1055,5 +1402,5 @@
             }, 3000);
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97f9d31706f0ad71',t:'MTc1Nzk1NzEzOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97fac606b7b5dfb2',t:'MTc1Nzk2NzA4OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
