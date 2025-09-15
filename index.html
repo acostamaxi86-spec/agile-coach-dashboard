@@ -143,7 +143,7 @@
     <!-- New Intervention Modal -->
     <div id="newInterventionModal" class="fixed inset-0 bg-black bg-opacity-50 modal-backdrop hidden z-50">
         <div class="flex items-center justify-center min-h-screen p-4">
-            <div class="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-screen overflow-y-auto">
+            <div class="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-screen overflow-y-auto">
                 <div class="p-6 border-b border-gray-200">
                     <div class="flex items-center justify-between">
                         <h3 class="text-xl font-semibold text-gray-900">Nueva Intervención</h3>
@@ -172,7 +172,25 @@
                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"></textarea>
                     </div>
                     
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Trimestre</label>
+                            <select id="interventionQuarter" required 
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                <option value="">Seleccionar Q</option>
+                                <option value="Q1">Q1 (Ene-Mar)</option>
+                                <option value="Q2">Q2 (Abr-Jun)</option>
+                                <option value="Q3">Q3 (Jul-Sep)</option>
+                                <option value="Q4">Q4 (Oct-Dic)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Año</label>
+                            <select id="interventionYear" required 
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                <option value="">Seleccionar año</option>
+                            </select>
+                        </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Fecha de Inicio</label>
                             <input type="date" id="interventionStartDate" required 
@@ -205,6 +223,40 @@
                             <label class="block text-sm font-medium text-gray-700 mb-2">Coach Responsable</label>
                             <input type="text" id="interventionCoach" 
                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    
+                    <!-- Medición de la Intervención -->
+                    <div class="border-t border-gray-200 pt-6">
+                        <h4 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                            <span class="mr-2">📊</span>
+                            Medición de la Intervención
+                        </h4>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Métrica a Medir</label>
+                                <input type="text" id="interventionMetric" placeholder="Ej: Velocidad del equipo, Time to Market, Satisfacción del cliente" 
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Valor Base Actual</label>
+                                <input type="text" id="interventionBaseline" placeholder="Ej: 25 story points, 3 meses, 6.5/10" 
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Cantidad de Personas del Equipo/Gerencia</label>
+                                <input type="number" id="interventionTeamSize" min="1" placeholder="Número de personas involucradas" 
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Medición Esperada</label>
+                                <input type="text" id="interventionTarget" placeholder="Ej: 40 story points, 1.5 meses, 8.5/10" 
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                            </div>
                         </div>
                     </div>
                     
@@ -286,10 +338,27 @@
             loadInterventions();
             updateDashboard();
             setupEventListeners();
+            populateYearOptions();
             
             // Set default date to today
             document.getElementById('interventionStartDate').value = new Date().toISOString().split('T')[0];
         });
+
+        function populateYearOptions() {
+            const yearSelect = document.getElementById('interventionYear');
+            const currentYear = new Date().getFullYear();
+            
+            // Add years from 2020 to current year + 2
+            for (let year = 2020; year <= currentYear + 2; year++) {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                if (year === currentYear) {
+                    option.selected = true;
+                }
+                yearSelect.appendChild(option);
+            }
+        }
 
         function setupEventListeners() {
             // Search and filter
@@ -321,11 +390,17 @@
                 title: document.getElementById('interventionTitle').value,
                 gerencia: document.getElementById('interventionGerencia').value,
                 description: document.getElementById('interventionDescription').value,
+                quarter: document.getElementById('interventionQuarter').value,
+                year: parseInt(document.getElementById('interventionYear').value),
                 startDate: document.getElementById('interventionStartDate').value,
                 endDate: document.getElementById('interventionEndDate').value,
                 status: document.getElementById('interventionStatus').value,
                 progress: parseInt(document.getElementById('interventionProgress').value),
                 coach: document.getElementById('interventionCoach').value,
+                metric: document.getElementById('interventionMetric').value,
+                baseline: document.getElementById('interventionBaseline').value,
+                teamSize: parseInt(document.getElementById('interventionTeamSize').value) || 0,
+                target: document.getElementById('interventionTarget').value,
                 createdAt: new Date().toISOString(),
                 activities: [],
                 notes: []
@@ -373,8 +448,10 @@
                             </div>
                             <p class="text-gray-600 mb-2">${intervention.gerencia}</p>
                             <div class="flex items-center space-x-4 text-sm text-gray-500">
+                                ${intervention.quarter && intervention.year ? `<span>📊 ${intervention.quarter} ${intervention.year}</span>` : ''}
                                 <span>📅 ${formatDate(intervention.startDate)} - ${formatDate(intervention.endDate)}</span>
                                 <span>👤 ${intervention.coach || 'Sin asignar'}</span>
+                                ${intervention.teamSize ? `<span>👥 ${intervention.teamSize} personas</span>` : ''}
                             </div>
                         </div>
                         <div class="text-right">
@@ -447,8 +524,10 @@
                             </div>
                             <p class="text-gray-600 mb-2">${intervention.gerencia}</p>
                             <div class="flex items-center space-x-4 text-sm text-gray-500">
+                                ${intervention.quarter && intervention.year ? `<span>📊 ${intervention.quarter} ${intervention.year}</span>` : ''}
                                 <span>📅 ${formatDate(intervention.startDate)} - ${formatDate(intervention.endDate)}</span>
                                 <span>👤 ${intervention.coach || 'Sin asignar'}</span>
+                                ${intervention.teamSize ? `<span>👥 ${intervention.teamSize} personas</span>` : ''}
                             </div>
                         </div>
                         <div class="text-right">
@@ -486,6 +565,12 @@
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Gerencia</label>
                                 <p class="text-gray-900">${intervention.gerencia}</p>
                             </div>
+                            ${intervention.quarter && intervention.year ? `
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Trimestre</label>
+                                <p class="text-gray-900">${intervention.quarter} ${intervention.year}</p>
+                            </div>
+                            ` : ''}
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Coach Responsable</label>
                                 <p class="text-gray-900">${intervention.coach || 'Sin asignar'}</p>
@@ -528,6 +613,42 @@
                         <label class="block text-sm font-medium text-gray-700 mb-2">Descripción</label>
                         <p class="text-gray-900 bg-gray-50 p-4 rounded-lg">${intervention.description || 'Sin descripción'}</p>
                     </div>
+
+                    <!-- Measurement Section -->
+                    ${intervention.metric || intervention.baseline || intervention.target || intervention.teamSize ? `
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                        <h4 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                            <span class="mr-2">📊</span>
+                            Medición de la Intervención
+                        </h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            ${intervention.metric ? `
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Métrica</label>
+                                <p class="text-gray-900">${intervention.metric}</p>
+                            </div>
+                            ` : ''}
+                            ${intervention.baseline ? `
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Valor Base</label>
+                                <p class="text-gray-900">${intervention.baseline}</p>
+                            </div>
+                            ` : ''}
+                            ${intervention.teamSize ? `
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Tamaño del Equipo</label>
+                                <p class="text-gray-900">${intervention.teamSize} personas</p>
+                            </div>
+                            ` : ''}
+                            ${intervention.target ? `
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Objetivo Esperado</label>
+                                <p class="text-gray-900">${intervention.target}</p>
+                            </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                    ` : ''}
 
                     <!-- Activities Section -->
                     <div>
@@ -774,7 +895,27 @@
                 doc.text(`Progreso: ${intervention.progress}%`, 25, yPosition);
                 yPosition += 7;
                 doc.text(`Fechas: ${formatDate(intervention.startDate)} - ${formatDate(intervention.endDate)}`, 25, yPosition);
-                yPosition += 15;
+                yPosition += 7;
+                
+                // Add measurement info if available
+                if (intervention.metric) {
+                    doc.text(`Métrica: ${intervention.metric}`, 25, yPosition);
+                    yPosition += 7;
+                }
+                if (intervention.baseline) {
+                    doc.text(`Valor Base: ${intervention.baseline}`, 25, yPosition);
+                    yPosition += 7;
+                }
+                if (intervention.target) {
+                    doc.text(`Objetivo: ${intervention.target}`, 25, yPosition);
+                    yPosition += 7;
+                }
+                if (intervention.teamSize) {
+                    doc.text(`Equipo: ${intervention.teamSize} personas`, 25, yPosition);
+                    yPosition += 7;
+                }
+                
+                yPosition += 8;
             });
             
             doc.save('intervenciones-agile.pdf');
@@ -784,18 +925,24 @@
 
         function exportToExcel() {
             const ws_data = [
-                ['Título', 'Gerencia', 'Estado', 'Progreso (%)', 'Fecha Inicio', 'Fecha Fin', 'Coach', 'Descripción']
+                ['Título', 'Gerencia', 'Trimestre', 'Año', 'Estado', 'Progreso (%)', 'Fecha Inicio', 'Fecha Fin', 'Coach', 'Métrica', 'Valor Base', 'Objetivo', 'Tamaño Equipo', 'Descripción']
             ];
             
             interventions.forEach(intervention => {
                 ws_data.push([
                     intervention.title,
                     intervention.gerencia,
+                    intervention.quarter || '',
+                    intervention.year || '',
                     getStatusText(intervention.status),
                     intervention.progress,
                     intervention.startDate,
                     intervention.endDate,
                     intervention.coach || '',
+                    intervention.metric || '',
+                    intervention.baseline || '',
+                    intervention.target || '',
+                    intervention.teamSize || '',
                     intervention.description || ''
                 ]);
             });
@@ -822,17 +969,23 @@
         }
 
         function exportToCSV() {
-            const headers = ['Título', 'Gerencia', 'Estado', 'Progreso (%)', 'Fecha Inicio', 'Fecha Fin', 'Coach', 'Descripción'];
+            const headers = ['Título', 'Gerencia', 'Trimestre', 'Año', 'Estado', 'Progreso (%)', 'Fecha Inicio', 'Fecha Fin', 'Coach', 'Métrica', 'Valor Base', 'Objetivo', 'Tamaño Equipo', 'Descripción'];
             const csvContent = [
                 headers.join(','),
                 ...interventions.map(intervention => [
                     `"${intervention.title}"`,
                     `"${intervention.gerencia}"`,
+                    `"${intervention.quarter || ''}"`,
+                    intervention.year || '',
                     `"${getStatusText(intervention.status)}"`,
                     intervention.progress,
                     intervention.startDate,
                     intervention.endDate,
                     `"${intervention.coach || ''}"`,
+                    `"${intervention.metric || ''}"`,
+                    `"${intervention.baseline || ''}"`,
+                    `"${intervention.target || ''}"`,
+                    intervention.teamSize || '',
                     `"${intervention.description || ''}"`
                 ].join(','))
             ].join('\n');
@@ -902,5 +1055,5 @@
             }, 3000);
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97f8a57a01f1adae',t:'MTc1Nzk0NDc4NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97f9d31706f0ad71',t:'MTc1Nzk1NzEzOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
