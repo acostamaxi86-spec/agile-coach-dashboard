@@ -42,6 +42,10 @@
                         <span>🤖</span>
                         <span class="hidden sm:inline">Asistente IA</span>
                     </button>
+                    <button onclick="showSessionsView()" class="bg-white bg-opacity-20 hover:bg-opacity-30 px-4 py-2 rounded-lg transition-all duration-200 flex items-center space-x-2">
+                        <span>📝</span>
+                        <span class="hidden sm:inline">Sesiones</span>
+                    </button>
                     <button onclick="exportData()" class="bg-white bg-opacity-20 hover:bg-opacity-30 px-4 py-2 rounded-lg transition-all duration-200 flex items-center space-x-2">
                         <span>📊</span>
                         <span class="hidden sm:inline">Exportar Datos</span>
@@ -382,6 +386,193 @@
         </div>
     </div>
 
+    <!-- Sessions View Modal -->
+    <div id="sessionsModal" class="fixed inset-0 bg-black bg-opacity-50 modal-backdrop hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-xl shadow-xl max-w-6xl w-full max-h-screen overflow-y-auto">
+                <div class="p-6 border-b border-gray-200 bg-gradient-to-r from-green-600 to-teal-600 text-white">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                                <span class="text-xl">📝</span>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-semibold">Registro de Sesiones de Coaching</h3>
+                                <p class="text-green-100 text-sm">Documenta y rastrea tus sesiones con equipos</p>
+                            </div>
+                        </div>
+                        <button onclick="hideSessionsView()" class="text-white hover:text-green-200">
+                            <span class="text-2xl">×</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Quick Stats -->
+                <div class="p-6 bg-gray-50 border-b border-gray-200">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div class="bg-white rounded-lg p-4 text-center">
+                            <div class="text-2xl font-bold text-green-600" id="totalSessions">0</div>
+                            <div class="text-sm text-gray-600">Total Sesiones</div>
+                        </div>
+                        <div class="bg-white rounded-lg p-4 text-center">
+                            <div class="text-2xl font-bold text-blue-600" id="thisWeekSessions">0</div>
+                            <div class="text-sm text-gray-600">Esta Semana</div>
+                        </div>
+                        <div class="bg-white rounded-lg p-4 text-center">
+                            <div class="text-2xl font-bold text-purple-600" id="activeTeams">0</div>
+                            <div class="text-sm text-gray-600">Equipos Activos</div>
+                        </div>
+                        <div class="bg-white rounded-lg p-4 text-center">
+                            <div class="text-2xl font-bold text-orange-600" id="avgSessionDuration">0</div>
+                            <div class="text-sm text-gray-600">Duración Promedio</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Add Session Button -->
+                <div class="p-6 border-b border-gray-200">
+                    <button onclick="showNewSessionModal()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium flex items-center space-x-2">
+                        <span>➕</span>
+                        <span>Registrar Nueva Sesión</span>
+                    </button>
+                </div>
+
+                <!-- Sessions List -->
+                <div id="sessionsList" class="p-6">
+                    <div class="text-center text-gray-500 py-8">
+                        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <span class="text-2xl">📝</span>
+                        </div>
+                        <p class="text-lg font-medium mb-2">No hay sesiones registradas</p>
+                        <p class="text-sm">Comienza registrando tu primera sesión de coaching</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Session Modal -->
+    <div id="newSessionModal" class="fixed inset-0 bg-black bg-opacity-50 modal-backdrop hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-xl shadow-xl max-w-3xl w-full max-h-screen overflow-y-auto">
+                <div class="p-6 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-xl font-semibold text-gray-900">Nueva Sesión de Coaching</h3>
+                        <button onclick="hideNewSessionModal()" class="text-gray-400 hover:text-gray-600">
+                            <span class="text-2xl">×</span>
+                        </button>
+                    </div>
+                </div>
+                <form id="newSessionForm" class="p-6 space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Intervención Asociada</label>
+                            <select id="sessionIntervention" required 
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                                <option value="">Seleccionar intervención</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Sesión</label>
+                            <select id="sessionType" required 
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                                <option value="">Seleccionar tipo</option>
+                                <option value="coaching-individual">Coaching Individual</option>
+                                <option value="coaching-grupal">Coaching Grupal</option>
+                                <option value="facilitacion">Facilitación</option>
+                                <option value="training">Training/Capacitación</option>
+                                <option value="retrospectiva">Retrospectiva</option>
+                                <option value="planning">Planning</option>
+                                <option value="assessment">Assessment</option>
+                                <option value="mentoring">Mentoring</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Fecha</label>
+                            <input type="date" id="sessionDate" required 
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Duración (minutos)</label>
+                            <input type="number" id="sessionDuration" min="15" max="480" value="60" required 
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Participantes</label>
+                            <input type="number" id="sessionParticipants" min="1" max="50" value="1" required 
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Objetivos de la Sesión</label>
+                        <textarea id="sessionObjectives" rows="3" required 
+                                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                                  placeholder="¿Qué se buscaba lograr en esta sesión?"></textarea>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Resumen de la Sesión</label>
+                        <textarea id="sessionSummary" rows="4" required 
+                                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                                  placeholder="¿Qué se trabajó? ¿Qué temas se abordaron?"></textarea>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Insights y Observaciones</label>
+                        <textarea id="sessionInsights" rows="3" 
+                                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                                  placeholder="¿Qué patrones observaste? ¿Qué insights surgieron?"></textarea>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Próximos Pasos / Action Items</label>
+                        <textarea id="sessionActionItems" rows="3" 
+                                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                                  placeholder="¿Qué compromisos se establecieron? ¿Cuáles son los próximos pasos?"></textarea>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Nivel de Energía del Equipo (1-10)</label>
+                            <input type="range" id="sessionEnergyLevel" min="1" max="10" value="5" 
+                                   class="w-full" oninput="updateEnergyDisplay(this.value)">
+                            <div class="flex justify-between text-xs text-gray-500 mt-1">
+                                <span>Muy Bajo</span>
+                                <span id="energyDisplay" class="font-medium">5</span>
+                                <span>Muy Alto</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Efectividad de la Sesión (1-10)</label>
+                            <input type="range" id="sessionEffectiveness" min="1" max="10" value="7" 
+                                   class="w-full" oninput="updateEffectivenessDisplay(this.value)">
+                            <div class="flex justify-between text-xs text-gray-500 mt-1">
+                                <span>Poco Efectiva</span>
+                                <span id="effectivenessDisplay" class="font-medium">7</span>
+                                <span>Muy Efectiva</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+                        <button type="button" onclick="hideNewSessionModal()" 
+                                class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                            Cancelar
+                        </button>
+                        <button type="submit" 
+                                class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors">
+                            Registrar Sesión
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Export Modal -->
     <div id="exportModal" class="fixed inset-0 bg-black bg-opacity-50 modal-backdrop hidden z-50">
         <div class="flex items-center justify-center min-h-screen p-4">
@@ -419,6 +610,7 @@
     <script>
         // Global variables
         let interventions = JSON.parse(localStorage.getItem('interventions')) || [];
+        let sessions = JSON.parse(localStorage.getItem('sessions')) || [];
         let currentInterventionId = null;
 
         // Initialize app
@@ -458,6 +650,11 @@
             document.getElementById('newInterventionForm').addEventListener('submit', function(e) {
                 e.preventDefault();
                 createIntervention();
+            });
+            
+            document.getElementById('newSessionForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                createSession();
             });
         }
 
@@ -722,6 +919,233 @@
             
             // Show success message
             showNotification('Intervención creada exitosamente', 'success');
+        }
+
+        // Sessions Management Functions
+        function showSessionsView() {
+            populateSessionInterventions();
+            updateSessionsStats();
+            loadSessions();
+            document.getElementById('sessionsModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function hideSessionsView() {
+            document.getElementById('sessionsModal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+
+        function showNewSessionModal() {
+            populateSessionInterventions();
+            document.getElementById('sessionDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('newSessionModal').classList.remove('hidden');
+        }
+
+        function hideNewSessionModal() {
+            document.getElementById('newSessionModal').classList.add('hidden');
+            document.getElementById('newSessionForm').reset();
+        }
+
+        function populateSessionInterventions() {
+            const select = document.getElementById('sessionIntervention');
+            select.innerHTML = '<option value="">Seleccionar intervención</option>';
+            
+            interventions.forEach(intervention => {
+                const option = document.createElement('option');
+                option.value = intervention.id;
+                option.textContent = `${intervention.title} - ${intervention.gerencia}`;
+                select.appendChild(option);
+            });
+        }
+
+        function updateEnergyDisplay(value) {
+            document.getElementById('energyDisplay').textContent = value;
+        }
+
+        function updateEffectivenessDisplay(value) {
+            document.getElementById('effectivenessDisplay').textContent = value;
+        }
+
+        function createSession() {
+            const interventionId = parseInt(document.getElementById('sessionIntervention').value);
+            const intervention = interventions.find(i => i.id === interventionId);
+            
+            const session = {
+                id: Date.now(),
+                interventionId: interventionId,
+                interventionTitle: intervention ? intervention.title : '',
+                teamName: intervention ? intervention.teamName : '',
+                gerencia: intervention ? intervention.gerencia : '',
+                type: document.getElementById('sessionType').value,
+                date: document.getElementById('sessionDate').value,
+                duration: parseInt(document.getElementById('sessionDuration').value),
+                participants: parseInt(document.getElementById('sessionParticipants').value),
+                objectives: document.getElementById('sessionObjectives').value,
+                summary: document.getElementById('sessionSummary').value,
+                insights: document.getElementById('sessionInsights').value,
+                actionItems: document.getElementById('sessionActionItems').value,
+                energyLevel: parseInt(document.getElementById('sessionEnergyLevel').value),
+                effectiveness: parseInt(document.getElementById('sessionEffectiveness').value),
+                createdAt: new Date().toISOString()
+            };
+
+            sessions.push(session);
+            
+            // Also add to intervention's sessions array
+            if (intervention) {
+                intervention.sessions.push(session.id);
+            }
+            
+            saveSessions();
+            saveInterventions();
+            loadSessions();
+            updateSessionsStats();
+            hideNewSessionModal();
+            showNotification('Sesión registrada exitosamente', 'success');
+        }
+
+        function saveSessions() {
+            localStorage.setItem('sessions', JSON.stringify(sessions));
+        }
+
+        function loadSessions() {
+            const container = document.getElementById('sessionsList');
+            
+            if (sessions.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-gray-500 py-8">
+                        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <span class="text-2xl">📝</span>
+                        </div>
+                        <p class="text-lg font-medium mb-2">No hay sesiones registradas</p>
+                        <p class="text-sm">Comienza registrando tu primera sesión de coaching</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Sort sessions by date (most recent first)
+            const sortedSessions = [...sessions].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            container.innerHTML = sortedSessions.map(session => `
+                <div class="bg-white border border-gray-200 rounded-lg p-6 mb-4 hover:shadow-md transition-shadow">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-3 mb-2">
+                                <h3 class="text-lg font-semibold text-gray-900">${session.interventionTitle}</h3>
+                                <span class="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    ${getSessionTypeText(session.type)}
+                                </span>
+                            </div>
+                            <div class="flex items-center space-x-4 text-sm text-gray-500 mb-3">
+                                <span>📅 ${formatDate(session.date)}</span>
+                                <span>⏱️ ${session.duration} min</span>
+                                <span>👥 ${session.participants} participantes</span>
+                                <span>🏢 ${session.gerencia}</span>
+                                ${session.teamName ? `<span>👨‍💻 ${session.teamName}</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="flex space-x-4 mb-2">
+                                <div class="text-center">
+                                    <div class="text-lg font-bold text-blue-600">${session.energyLevel}/10</div>
+                                    <div class="text-xs text-gray-500">Energía</div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="text-lg font-bold text-green-600">${session.effectiveness}/10</div>
+                                    <div class="text-xs text-gray-500">Efectividad</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-3">
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-700 mb-1">Objetivos:</h4>
+                            <p class="text-sm text-gray-600">${session.objectives}</p>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-700 mb-1">Resumen:</h4>
+                            <p class="text-sm text-gray-600">${session.summary}</p>
+                        </div>
+                        ${session.insights ? `
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-700 mb-1">Insights:</h4>
+                            <p class="text-sm text-gray-600">${session.insights}</p>
+                        </div>
+                        ` : ''}
+                        ${session.actionItems ? `
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-700 mb-1">Action Items:</h4>
+                            <p class="text-sm text-gray-600">${session.actionItems}</p>
+                        </div>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="flex justify-end mt-4 pt-4 border-t border-gray-200">
+                        <button onclick="deleteSession(${session.id})" class="text-red-600 hover:text-red-800 text-sm">
+                            🗑️ Eliminar
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateSessionsStats() {
+            const totalSessions = sessions.length;
+            
+            // Calculate this week's sessions
+            const today = new Date();
+            const weekStart = new Date(today.setDate(today.getDate() - today.getDay()));
+            const thisWeekSessions = sessions.filter(s => new Date(s.date) >= weekStart).length;
+            
+            // Calculate active teams (unique teams with sessions in last 30 days)
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            const recentSessions = sessions.filter(s => new Date(s.date) >= thirtyDaysAgo);
+            const activeTeams = new Set(recentSessions.map(s => s.interventionId)).size;
+            
+            // Calculate average session duration
+            const avgDuration = totalSessions > 0 ? 
+                Math.round(sessions.reduce((sum, s) => sum + s.duration, 0) / totalSessions) : 0;
+            
+            document.getElementById('totalSessions').textContent = totalSessions;
+            document.getElementById('thisWeekSessions').textContent = thisWeekSessions;
+            document.getElementById('activeTeams').textContent = activeTeams;
+            document.getElementById('avgSessionDuration').textContent = avgDuration + ' min';
+        }
+
+        function deleteSession(sessionId) {
+            if (confirm('¿Estás seguro de que quieres eliminar esta sesión?')) {
+                sessions = sessions.filter(s => s.id !== sessionId);
+                
+                // Remove from intervention's sessions array
+                interventions.forEach(intervention => {
+                    if (intervention.sessions) {
+                        intervention.sessions = intervention.sessions.filter(id => id !== sessionId);
+                    }
+                });
+                
+                saveSessions();
+                saveInterventions();
+                loadSessions();
+                updateSessionsStats();
+                showNotification('Sesión eliminada', 'success');
+            }
+        }
+
+        function getSessionTypeText(type) {
+            const types = {
+                'coaching-individual': 'Coaching Individual',
+                'coaching-grupal': 'Coaching Grupal',
+                'facilitacion': 'Facilitación',
+                'training': 'Training',
+                'retrospectiva': 'Retrospectiva',
+                'planning': 'Planning',
+                'assessment': 'Assessment',
+                'mentoring': 'Mentoring'
+            };
+            return types[type] || type;
         }
 
         function saveInterventions() {
@@ -1402,5 +1826,5 @@
             }, 3000);
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97fac606b7b5dfb2',t:'MTc1Nzk2NzA4OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97faf7298488758b',t:'MTc1Nzk2OTEwMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
