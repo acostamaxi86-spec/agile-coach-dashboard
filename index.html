@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agile Coach Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .card-hover { transition: all 0.3s ease; }
+        .card-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .progress-bar { transition: width 0.5s ease-in-out; }
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .modal-backdrop { backdrop-filter: blur(4px); }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="gradient-bg text-white shadow-lg">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                        <span class="text-xl font-bold">🎯</span>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold">Agile Coach Dashboard</h1>
+                        <p class="text-blue-100 text-sm">Gestión de Intervenciones y Seguimiento</p>
+                    </div>
+                </div>
+                <div class="flex space-x-3">
+                    <button onclick="exportData()" class="bg-white bg-opacity-20 hover:bg-opacity-30 px-4 py-2 rounded-lg transition-all duration-200 flex items-center space-x-2">
+                        <span>📊</span>
+                        <span class="hidden sm:inline">Exportar Datos</span>
+                    </button>
+                    <button onclick="showNewInterventionModal()" class="bg-yellow-400 hover:bg-yellow-500 text-gray-900 px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center space-x-2">
+                        <span>➕</span>
+                        <span class="hidden sm:inline">Nueva Intervención</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-6 py-8">
+        <!-- Dashboard Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-xl shadow-sm p-6 card-hover">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-medium">Total Intervenciones</p>
+                        <p class="text-3xl font-bold text-gray-900" id="totalInterventions">0</p>
+                    </div>
+                    <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <span class="text-2xl">📋</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-sm p-6 card-hover">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-medium">En Progreso</p>
+                        <p class="text-3xl font-bold text-yellow-600" id="inProgressCount">0</p>
+                    </div>
+                    <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                        <span class="text-2xl">⏳</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-sm p-6 card-hover">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-medium">Completadas</p>
+                        <p class="text-3xl font-bold text-green-600" id="completedCount">0</p>
+                    </div>
+                    <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                        <span class="text-2xl">✅</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-sm p-6 card-hover">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-medium">Próximos Vencimientos</p>
+                        <p class="text-3xl font-bold text-red-600" id="upcomingDeadlines">0</p>
+                    </div>
+                    <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                        <span class="text-2xl">⚠️</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="bg-white rounded-xl shadow-sm p-6 mb-8">
+            <div class="flex flex-wrap gap-4 items-center">
+                <div class="flex-1 min-w-64">
+                    <input type="text" id="searchInput" placeholder="Buscar intervenciones..." 
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                <select id="statusFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    <option value="">Todos los estados</option>
+                    <option value="planificacion">Planificación</option>
+                    <option value="en-progreso">En Progreso</option>
+                    <option value="completada">Completada</option>
+                    <option value="pausada">Pausada</option>
+                </select>
+                <select id="gerenciaFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    <option value="">Todas las gerencias</option>
+                </select>
+                <button onclick="clearFilters()" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                    Limpiar Filtros
+                </button>
+            </div>
+        </div>
+
+        <!-- Interventions List -->
+        <div class="bg-white rounded-xl shadow-sm">
+            <div class="p-6 border-b border-gray-200">
+                <h2 class="text-xl font-semibold text-gray-900">Intervenciones Activas</h2>
+            </div>
+            <div id="interventionsList" class="divide-y divide-gray-200">
+                <div class="p-8 text-center text-gray-500">
+                    <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <span class="text-2xl">📋</span>
+                    </div>
+                    <p class="text-lg font-medium mb-2">No hay intervenciones registradas</p>
+                    <p class="text-sm">Haz clic en "Nueva Intervención" para comenzar</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- New Intervention Modal -->
+    <div id="newInterventionModal" class="fixed inset-0 bg-black bg-opacity-50 modal-backdrop hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-screen overflow-y-auto">
+                <div class="p-6 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-xl font-semibold text-gray-900">Nueva Intervención</h3>
+                        <button onclick="hideNewInterventionModal()" class="text-gray-400 hover:text-gray-600">
+                            <span class="text-2xl">×</span>
+                        </button>
+                    </div>
+                </div>
+                <form id="newInterventionForm" class="p-6 space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Título de la Intervención</label>
+                            <input type="text" id="interventionTitle" required 
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Gerencia</label>
+                            <input type="text" id="interventionGerencia" required 
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Descripción</label>
+                        <textarea id="interventionDescription" rows="3" 
+                                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"></textarea>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Fecha de Inicio</label>
+                            <input type="date" id="interventionStartDate" required 
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Fecha de Fin</label>
+                            <input type="date" id="interventionEndDate" required 
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Estado</label>
+                            <select id="interventionStatus" 
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                <option value="planificacion">Planificación</option>
+                                <option value="en-progreso">En Progreso</option>
+                                <option value="completada">Completada</option>
+                                <option value="pausada">Pausada</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Progreso (%)</label>
+                            <input type="number" id="interventionProgress" min="0" max="100" value="0" 
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Coach Responsable</label>
+                            <input type="text" id="interventionCoach" 
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+                        <button type="button" onclick="hideNewInterventionModal()" 
+                                class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                            Cancelar
+                        </button>
+                        <button type="submit" 
+                                class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                            Crear Intervención
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Intervention Detail Modal -->
+    <div id="interventionDetailModal" class="fixed inset-0 bg-black bg-opacity-50 modal-backdrop hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-screen overflow-y-auto">
+                <div class="p-6 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-xl font-semibold text-gray-900" id="detailTitle">Detalle de Intervención</h3>
+                        <button onclick="hideInterventionDetail()" class="text-gray-400 hover:text-gray-600">
+                            <span class="text-2xl">×</span>
+                        </button>
+                    </div>
+                </div>
+                <div id="interventionDetailContent" class="p-6">
+                    <!-- Content will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Modal -->
+    <div id="exportModal" class="fixed inset-0 bg-black bg-opacity-50 modal-backdrop hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-xl shadow-xl max-w-md w-full">
+                <div class="p-6 border-b border-gray-200">
+                    <h3 class="text-xl font-semibold text-gray-900">Exportar Datos</h3>
+                </div>
+                <div class="p-6 space-y-4">
+                    <button onclick="exportToPDF()" class="w-full flex items-center justify-center space-x-3 px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors">
+                        <span>📄</span>
+                        <span>Exportar a PDF</span>
+                    </button>
+                    <button onclick="exportToExcel()" class="w-full flex items-center justify-center space-x-3 px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors">
+                        <span>📊</span>
+                        <span>Exportar a Excel</span>
+                    </button>
+                    <button onclick="exportToCSV()" class="w-full flex items-center justify-center space-x-3 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                        <span>📋</span>
+                        <span>Exportar a CSV</span>
+                    </button>
+                    <button onclick="exportToJSON()" class="w-full flex items-center justify-center space-x-3 px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors">
+                        <span>💾</span>
+                        <span>Respaldo JSON</span>
+                    </button>
+                </div>
+                <div class="p-6 border-t border-gray-200">
+                    <button onclick="hideExportModal()" class="w-full px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                        Cerrar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let interventions = JSON.parse(localStorage.getItem('interventions')) || [];
+        let currentInterventionId = null;
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            loadInterventions();
+            updateDashboard();
+            setupEventListeners();
+            
+            // Set default date to today
+            document.getElementById('interventionStartDate').value = new Date().toISOString().split('T')[0];
+        });
+
+        function setupEventListeners() {
+            // Search and filter
+            document.getElementById('searchInput').addEventListener('input', filterInterventions);
+            document.getElementById('statusFilter').addEventListener('change', filterInterventions);
+            document.getElementById('gerenciaFilter').addEventListener('change', filterInterventions);
+            
+            // Form submission
+            document.getElementById('newInterventionForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                createIntervention();
+            });
+        }
+
+        function showNewInterventionModal() {
+            document.getElementById('newInterventionModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function hideNewInterventionModal() {
+            document.getElementById('newInterventionModal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+            document.getElementById('newInterventionForm').reset();
+        }
+
+        function createIntervention() {
+            const intervention = {
+                id: Date.now(),
+                title: document.getElementById('interventionTitle').value,
+                gerencia: document.getElementById('interventionGerencia').value,
+                description: document.getElementById('interventionDescription').value,
+                startDate: document.getElementById('interventionStartDate').value,
+                endDate: document.getElementById('interventionEndDate').value,
+                status: document.getElementById('interventionStatus').value,
+                progress: parseInt(document.getElementById('interventionProgress').value),
+                coach: document.getElementById('interventionCoach').value,
+                createdAt: new Date().toISOString(),
+                activities: [],
+                notes: []
+            };
+
+            interventions.push(intervention);
+            saveInterventions();
+            loadInterventions();
+            updateDashboard();
+            hideNewInterventionModal();
+            
+            // Show success message
+            showNotification('Intervención creada exitosamente', 'success');
+        }
+
+        function saveInterventions() {
+            localStorage.setItem('interventions', JSON.stringify(interventions));
+        }
+
+        function loadInterventions() {
+            const container = document.getElementById('interventionsList');
+            
+            if (interventions.length === 0) {
+                container.innerHTML = `
+                    <div class="p-8 text-center text-gray-500">
+                        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <span class="text-2xl">📋</span>
+                        </div>
+                        <p class="text-lg font-medium mb-2">No hay intervenciones registradas</p>
+                        <p class="text-sm">Haz clic en "Nueva Intervención" para comenzar</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = interventions.map(intervention => `
+                <div class="p-6 hover:bg-gray-50 cursor-pointer transition-colors" onclick="showInterventionDetail(${intervention.id})">
+                    <div class="flex items-center justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-3 mb-2">
+                                <h3 class="text-lg font-semibold text-gray-900">${intervention.title}</h3>
+                                <span class="px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(intervention.status)}">
+                                    ${getStatusText(intervention.status)}
+                                </span>
+                            </div>
+                            <p class="text-gray-600 mb-2">${intervention.gerencia}</p>
+                            <div class="flex items-center space-x-4 text-sm text-gray-500">
+                                <span>📅 ${formatDate(intervention.startDate)} - ${formatDate(intervention.endDate)}</span>
+                                <span>👤 ${intervention.coach || 'Sin asignar'}</span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-2xl font-bold text-gray-900 mb-1">${intervention.progress}%</div>
+                            <div class="w-24 bg-gray-200 rounded-full h-2">
+                                <div class="bg-blue-600 h-2 rounded-full progress-bar" style="width: ${intervention.progress}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            updateGerenciaFilter();
+        }
+
+        function updateGerenciaFilter() {
+            const gerencias = [...new Set(interventions.map(i => i.gerencia))];
+            const select = document.getElementById('gerenciaFilter');
+            const currentValue = select.value;
+            
+            select.innerHTML = '<option value="">Todas las gerencias</option>' +
+                gerencias.map(g => `<option value="${g}">${g}</option>`).join('');
+            
+            select.value = currentValue;
+        }
+
+        function filterInterventions() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const status = document.getElementById('statusFilter').value;
+            const gerencia = document.getElementById('gerenciaFilter').value;
+
+            let filtered = interventions.filter(intervention => {
+                const matchesSearch = intervention.title.toLowerCase().includes(search) ||
+                                    intervention.gerencia.toLowerCase().includes(search) ||
+                                    intervention.description.toLowerCase().includes(search);
+                const matchesStatus = !status || intervention.status === status;
+                const matchesGerencia = !gerencia || intervention.gerencia === gerencia;
+                
+                return matchesSearch && matchesStatus && matchesGerencia;
+            });
+
+            displayFilteredInterventions(filtered);
+        }
+
+        function displayFilteredInterventions(filtered) {
+            const container = document.getElementById('interventionsList');
+            
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="p-8 text-center text-gray-500">
+                        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <span class="text-2xl">🔍</span>
+                        </div>
+                        <p class="text-lg font-medium mb-2">No se encontraron resultados</p>
+                        <p class="text-sm">Intenta con otros criterios de búsqueda</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = filtered.map(intervention => `
+                <div class="p-6 hover:bg-gray-50 cursor-pointer transition-colors" onclick="showInterventionDetail(${intervention.id})">
+                    <div class="flex items-center justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-3 mb-2">
+                                <h3 class="text-lg font-semibold text-gray-900">${intervention.title}</h3>
+                                <span class="px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(intervention.status)}">
+                                    ${getStatusText(intervention.status)}
+                                </span>
+                            </div>
+                            <p class="text-gray-600 mb-2">${intervention.gerencia}</p>
+                            <div class="flex items-center space-x-4 text-sm text-gray-500">
+                                <span>📅 ${formatDate(intervention.startDate)} - ${formatDate(intervention.endDate)}</span>
+                                <span>👤 ${intervention.coach || 'Sin asignar'}</span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-2xl font-bold text-gray-900 mb-1">${intervention.progress}%</div>
+                            <div class="w-24 bg-gray-200 rounded-full h-2">
+                                <div class="bg-blue-600 h-2 rounded-full progress-bar" style="width: ${intervention.progress}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function clearFilters() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('statusFilter').value = '';
+            document.getElementById('gerenciaFilter').value = '';
+            loadInterventions();
+        }
+
+        function showInterventionDetail(id) {
+            const intervention = interventions.find(i => i.id === id);
+            if (!intervention) return;
+
+            currentInterventionId = id;
+            document.getElementById('detailTitle').textContent = intervention.title;
+            
+            const content = document.getElementById('interventionDetailContent');
+            content.innerHTML = `
+                <div class="space-y-6">
+                    <!-- Basic Info -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Gerencia</label>
+                                <p class="text-gray-900">${intervention.gerencia}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Coach Responsable</label>
+                                <p class="text-gray-900">${intervention.coach || 'Sin asignar'}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+                                <select id="detailStatus" class="w-full px-3 py-2 border border-gray-300 rounded-lg" onchange="updateInterventionStatus(${id})">
+                                    <option value="planificacion" ${intervention.status === 'planificacion' ? 'selected' : ''}>Planificación</option>
+                                    <option value="en-progreso" ${intervention.status === 'en-progreso' ? 'selected' : ''}>En Progreso</option>
+                                    <option value="completada" ${intervention.status === 'completada' ? 'selected' : ''}>Completada</option>
+                                    <option value="pausada" ${intervention.status === 'pausada' ? 'selected' : ''}>Pausada</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de Inicio</label>
+                                <p class="text-gray-900">${formatDate(intervention.startDate)}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de Fin</label>
+                                <p class="text-gray-900">${formatDate(intervention.endDate)}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Progreso</label>
+                                <div class="flex items-center space-x-3">
+                                    <input type="range" id="progressSlider" min="0" max="100" value="${intervention.progress}" 
+                                           class="flex-1" onchange="updateProgress(${id}, this.value)">
+                                    <span class="text-lg font-semibold text-gray-900 w-12">${intervention.progress}%</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-3 mt-2">
+                                    <div class="bg-blue-600 h-3 rounded-full progress-bar" style="width: ${intervention.progress}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Description -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Descripción</label>
+                        <p class="text-gray-900 bg-gray-50 p-4 rounded-lg">${intervention.description || 'Sin descripción'}</p>
+                    </div>
+
+                    <!-- Activities Section -->
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <h4 class="text-lg font-semibold text-gray-900">Actividades</h4>
+                            <button onclick="addActivity(${id})" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm">
+                                + Agregar Actividad
+                            </button>
+                        </div>
+                        <div id="activitiesList" class="space-y-3">
+                            ${intervention.activities.map((activity, index) => `
+                                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                    <div class="flex items-center space-x-3">
+                                        <input type="checkbox" ${activity.completed ? 'checked' : ''} 
+                                               onchange="toggleActivity(${id}, ${index})" class="rounded">
+                                        <span class="${activity.completed ? 'line-through text-gray-500' : 'text-gray-900'}">${activity.title}</span>
+                                    </div>
+                                    <button onclick="removeActivity(${id}, ${index})" class="text-red-600 hover:text-red-800">
+                                        🗑️
+                                    </button>
+                                </div>
+                            `).join('') || '<p class="text-gray-500 text-center py-4">No hay actividades registradas</p>'}
+                        </div>
+                    </div>
+
+                    <!-- Notes Section -->
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <h4 class="text-lg font-semibold text-gray-900">Notas</h4>
+                            <button onclick="addNote(${id})" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm">
+                                + Agregar Nota
+                            </button>
+                        </div>
+                        <div id="notesList" class="space-y-3">
+                            ${intervention.notes.map((note, index) => `
+                                <div class="p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded-r-lg">
+                                    <div class="flex items-start justify-between">
+                                        <div class="flex-1">
+                                            <p class="text-gray-900">${note.content}</p>
+                                            <p class="text-xs text-gray-500 mt-2">${formatDateTime(note.timestamp)}</p>
+                                        </div>
+                                        <button onclick="removeNote(${id}, ${index})" class="text-red-600 hover:text-red-800 ml-2">
+                                            🗑️
+                                        </button>
+                                    </div>
+                                </div>
+                            `).join('') || '<p class="text-gray-500 text-center py-4">No hay notas registradas</p>'}
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex justify-between pt-6 border-t border-gray-200">
+                        <button onclick="deleteIntervention(${id})" class="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg">
+                            Eliminar Intervención
+                        </button>
+                        <button onclick="hideInterventionDetail()" class="px-6 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg">
+                            Cerrar
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('interventionDetailModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function hideInterventionDetail() {
+            document.getElementById('interventionDetailModal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+            currentInterventionId = null;
+        }
+
+        function updateInterventionStatus(id) {
+            const newStatus = document.getElementById('detailStatus').value;
+            const intervention = interventions.find(i => i.id === id);
+            if (intervention) {
+                intervention.status = newStatus;
+                if (newStatus === 'completada') {
+                    intervention.progress = 100;
+                }
+                saveInterventions();
+                updateDashboard();
+                showNotification('Estado actualizado', 'success');
+            }
+        }
+
+        function updateProgress(id, progress) {
+            const intervention = interventions.find(i => i.id === id);
+            if (intervention) {
+                intervention.progress = parseInt(progress);
+                if (progress == 100) {
+                    intervention.status = 'completada';
+                    document.getElementById('detailStatus').value = 'completada';
+                }
+                saveInterventions();
+                updateDashboard();
+                
+                // Update the progress bar in the modal
+                const progressBar = document.querySelector('#interventionDetailContent .progress-bar');
+                if (progressBar) {
+                    progressBar.style.width = progress + '%';
+                }
+                
+                showNotification('Progreso actualizado', 'success');
+            }
+        }
+
+        function addActivity(id) {
+            const title = prompt('Título de la actividad:');
+            if (title) {
+                const intervention = interventions.find(i => i.id === id);
+                if (intervention) {
+                    intervention.activities.push({
+                        title: title,
+                        completed: false,
+                        createdAt: new Date().toISOString()
+                    });
+                    saveInterventions();
+                    showInterventionDetail(id); // Refresh the modal
+                    showNotification('Actividad agregada', 'success');
+                }
+            }
+        }
+
+        function toggleActivity(id, activityIndex) {
+            const intervention = interventions.find(i => i.id === id);
+            if (intervention && intervention.activities[activityIndex]) {
+                intervention.activities[activityIndex].completed = !intervention.activities[activityIndex].completed;
+                saveInterventions();
+                showNotification('Actividad actualizada', 'success');
+            }
+        }
+
+        function removeActivity(id, activityIndex) {
+            if (confirm('¿Estás seguro de que quieres eliminar esta actividad?')) {
+                const intervention = interventions.find(i => i.id === id);
+                if (intervention) {
+                    intervention.activities.splice(activityIndex, 1);
+                    saveInterventions();
+                    showInterventionDetail(id); // Refresh the modal
+                    showNotification('Actividad eliminada', 'success');
+                }
+            }
+        }
+
+        function addNote(id) {
+            const content = prompt('Contenido de la nota:');
+            if (content) {
+                const intervention = interventions.find(i => i.id === id);
+                if (intervention) {
+                    intervention.notes.push({
+                        content: content,
+                        timestamp: new Date().toISOString()
+                    });
+                    saveInterventions();
+                    showInterventionDetail(id); // Refresh the modal
+                    showNotification('Nota agregada', 'success');
+                }
+            }
+        }
+
+        function removeNote(id, noteIndex) {
+            if (confirm('¿Estás seguro de que quieres eliminar esta nota?')) {
+                const intervention = interventions.find(i => i.id === id);
+                if (intervention) {
+                    intervention.notes.splice(noteIndex, 1);
+                    saveInterventions();
+                    showInterventionDetail(id); // Refresh the modal
+                    showNotification('Nota eliminada', 'success');
+                }
+            }
+        }
+
+        function deleteIntervention(id) {
+            if (confirm('¿Estás seguro de que quieres eliminar esta intervención? Esta acción no se puede deshacer.')) {
+                interventions = interventions.filter(i => i.id !== id);
+                saveInterventions();
+                loadInterventions();
+                updateDashboard();
+                hideInterventionDetail();
+                showNotification('Intervención eliminada', 'success');
+            }
+        }
+
+        function updateDashboard() {
+            const total = interventions.length;
+            const inProgress = interventions.filter(i => i.status === 'en-progreso').length;
+            const completed = interventions.filter(i => i.status === 'completada').length;
+            
+            // Calculate upcoming deadlines (within 7 days)
+            const today = new Date();
+            const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+            const upcoming = interventions.filter(i => {
+                const endDate = new Date(i.endDate);
+                return endDate >= today && endDate <= nextWeek && i.status !== 'completada';
+            }).length;
+
+            document.getElementById('totalInterventions').textContent = total;
+            document.getElementById('inProgressCount').textContent = inProgress;
+            document.getElementById('completedCount').textContent = completed;
+            document.getElementById('upcomingDeadlines').textContent = upcoming;
+        }
+
+        // Export functions
+        function exportData() {
+            document.getElementById('exportModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function hideExportModal() {
+            document.getElementById('exportModal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+
+        function exportToPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Title
+            doc.setFontSize(20);
+            doc.text('Reporte de Intervenciones Agile', 20, 20);
+            
+            // Date
+            doc.setFontSize(12);
+            doc.text(`Generado el: ${new Date().toLocaleDateString()}`, 20, 35);
+            
+            let yPosition = 50;
+            
+            interventions.forEach((intervention, index) => {
+                if (yPosition > 250) {
+                    doc.addPage();
+                    yPosition = 20;
+                }
+                
+                doc.setFontSize(14);
+                doc.text(`${index + 1}. ${intervention.title}`, 20, yPosition);
+                yPosition += 10;
+                
+                doc.setFontSize(10);
+                doc.text(`Gerencia: ${intervention.gerencia}`, 25, yPosition);
+                yPosition += 7;
+                doc.text(`Estado: ${getStatusText(intervention.status)}`, 25, yPosition);
+                yPosition += 7;
+                doc.text(`Progreso: ${intervention.progress}%`, 25, yPosition);
+                yPosition += 7;
+                doc.text(`Fechas: ${formatDate(intervention.startDate)} - ${formatDate(intervention.endDate)}`, 25, yPosition);
+                yPosition += 15;
+            });
+            
+            doc.save('intervenciones-agile.pdf');
+            hideExportModal();
+            showNotification('PDF generado exitosamente', 'success');
+        }
+
+        function exportToExcel() {
+            const ws_data = [
+                ['Título', 'Gerencia', 'Estado', 'Progreso (%)', 'Fecha Inicio', 'Fecha Fin', 'Coach', 'Descripción']
+            ];
+            
+            interventions.forEach(intervention => {
+                ws_data.push([
+                    intervention.title,
+                    intervention.gerencia,
+                    getStatusText(intervention.status),
+                    intervention.progress,
+                    intervention.startDate,
+                    intervention.endDate,
+                    intervention.coach || '',
+                    intervention.description || ''
+                ]);
+            });
+            
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(ws_data);
+            
+            // Style the header row
+            const range = XLSX.utils.decode_range(ws['!ref']);
+            for (let C = range.s.c; C <= range.e.c; ++C) {
+                const address = XLSX.utils.encode_cell({ r: 0, c: C });
+                if (!ws[address]) continue;
+                ws[address].s = {
+                    font: { bold: true },
+                    fill: { fgColor: { rgb: "4F46E5" } },
+                    color: { rgb: "FFFFFF" }
+                };
+            }
+            
+            XLSX.utils.book_append_sheet(wb, ws, "Intervenciones");
+            XLSX.writeFile(wb, 'intervenciones-agile.xlsx');
+            hideExportModal();
+            showNotification('Excel generado exitosamente', 'success');
+        }
+
+        function exportToCSV() {
+            const headers = ['Título', 'Gerencia', 'Estado', 'Progreso (%)', 'Fecha Inicio', 'Fecha Fin', 'Coach', 'Descripción'];
+            const csvContent = [
+                headers.join(','),
+                ...interventions.map(intervention => [
+                    `"${intervention.title}"`,
+                    `"${intervention.gerencia}"`,
+                    `"${getStatusText(intervention.status)}"`,
+                    intervention.progress,
+                    intervention.startDate,
+                    intervention.endDate,
+                    `"${intervention.coach || ''}"`,
+                    `"${intervention.description || ''}"`
+                ].join(','))
+            ].join('\n');
+            
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'intervenciones-agile.csv';
+            link.click();
+            hideExportModal();
+            showNotification('CSV generado exitosamente', 'success');
+        }
+
+        function exportToJSON() {
+            const dataStr = JSON.stringify(interventions, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'respaldo-intervenciones.json';
+            link.click();
+            hideExportModal();
+            showNotification('Respaldo JSON generado exitosamente', 'success');
+        }
+
+        // Utility functions
+        function getStatusColor(status) {
+            const colors = {
+                'planificacion': 'bg-gray-100 text-gray-800',
+                'en-progreso': 'bg-yellow-100 text-yellow-800',
+                'completada': 'bg-green-100 text-green-800',
+                'pausada': 'bg-red-100 text-red-800'
+            };
+            return colors[status] || 'bg-gray-100 text-gray-800';
+        }
+
+        function getStatusText(status) {
+            const texts = {
+                'planificacion': 'Planificación',
+                'en-progreso': 'En Progreso',
+                'completada': 'Completada',
+                'pausada': 'Pausada'
+            };
+            return texts[status] || status;
+        }
+
+        function formatDate(dateString) {
+            return new Date(dateString).toLocaleDateString('es-ES');
+        }
+
+        function formatDateTime(dateString) {
+            return new Date(dateString).toLocaleString('es-ES');
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 ${
+                type === 'success' ? 'bg-green-500 text-white' : 
+                type === 'error' ? 'bg-red-500 text-white' : 
+                'bg-blue-500 text-white'
+            }`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97f8a57a01f1adae',t:'MTc1Nzk0NDc4NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
